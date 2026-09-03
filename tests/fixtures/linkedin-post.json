@@ -1,0 +1,24 @@
+{
+  "lifecycleState": "PUBLISHED",
+  "lastModifiedAt": 1639512853791,
+  "visibility": "PUBLIC",
+  "publishedAt": 1639512774391,
+  "author": "urn:li:organization:5515715",
+  "distribution": {
+    "feedDistribution": "MAIN_FEED",
+    "thirdPartyDistributionChannels": []
+  },
+  "content": {
+    "media": {
+      "altText": "Accessible fixture image",
+      "id": "urn:li:image:C5F22AQEYStbwuCM12w"
+    }
+  },
+  "lifecycleStateInfo": {
+    "isEditedByAuthor": false
+  },
+  "isReshareDisabledByAuthor": false,
+  "createdAt": 1639512774185,
+  "id": "urn:li:share:6876614985750310912",
+  "commentary": "Official Posts API fixture text"
+}

@@ -1,0 +1,24 @@
+{
+  "name": "bernard-coubeaux/atomic-wp-social-sync",
+  "description": "Import and synchronize social content into native WordPress content.",
+  "type": "wordpress-plugin",
+  "license": "GPL-2.0-or-later",
+  "version": "0.1.0",
+  "authors": [
+    {
+      "name": "Bernard Coubeaux",
+      "email": "bernard@atomic-design.be",
+      "homepage": "https://atomic-design.be/"
+    }
+  ],
+  "require": {
+    "php": ">=8.1"
+  },
+  "require-dev": {
+    "dealerdirect/phpcodesniffer-composer-installer": "^1.0",
+    "wp-coding-standards/wpcs": "^3.0"
+  },
+  "scripts": {
+    "phpcs": "phpcs --standard=phpcs.xml.dist"
+  }
+}
