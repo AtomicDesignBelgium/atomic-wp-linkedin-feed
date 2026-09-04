@@ -374,14 +374,14 @@ try {
 
 	// LinkedIn embed parsing allowlist.
 	$raw_urn = LinkedInEmbed::parseInput( 'urn:li:share:7500553868422897664' );
-	atomic_social_assert( 'urn:li:share:7500553868422897664' === $raw_urn['urn'] && false === $raw_urn['is_compact'], 'Raw Share URN was not accepted.' );
+	atomic_social_assert( 'official' === (string) $raw_urn['strategy'] && 'urn:li:share:7500553868422897664' === $raw_urn['urn'] && false === $raw_urn['is_compact'], 'Raw Share URN was not accepted.' );
 	$url_urn = LinkedInEmbed::parseInput( 'https://www.linkedin.com/embed/feed/update/urn:li:share:7500553868422897664' );
-	atomic_social_assert( 'urn:li:share:7500553868422897664' === $url_urn['urn'] && false === $url_urn['is_compact'], 'Embed URL was not accepted.' );
+	atomic_social_assert( 'official' === (string) $url_urn['strategy'] && 'urn:li:share:7500553868422897664' === $url_urn['urn'] && false === $url_urn['is_compact'], 'Embed URL was not accepted.' );
 
 	// Regression: exact official iframe example (including Markdown-style backticks) must parse.
 	$official_iframe = '<iframe src="`https://www.linkedin.com/embed/feed/update/urn:li:share:7500553868422897664?collapsed=1`" height="603" width="504" frameborder="0" allowfullscreen="" title="Post intégré"></iframe>';
 	$official_parsed = LinkedInEmbed::parseInput( $official_iframe );
-	atomic_social_assert( 'urn:li:share:7500553868422897664' === $official_parsed['urn'], 'Official iframe did not normalize to the Share URN.' );
+	atomic_social_assert( 'official' === (string) $official_parsed['strategy'] && 'urn:li:share:7500553868422897664' === $official_parsed['urn'], 'Official iframe did not normalize to the Share URN.' );
 	atomic_social_assert( true === $official_parsed['is_compact'] && 603 === $official_parsed['height'], 'Official iframe did not parse compact/height.' );
 
 	// HTML entity decoding must work (common when copying from rich editors).
@@ -391,7 +391,7 @@ try {
 
 	// Numeric Share ID only must normalize.
 	$id_only = LinkedInEmbed::parseInput( '7500553868422897664' );
-	atomic_social_assert( 'urn:li:share:7500553868422897664' === $id_only['urn'], 'Numeric Share ID did not normalize to the Share URN.' );
+	atomic_social_assert( 'official' === (string) $id_only['strategy'] && 'urn:li:share:7500553868422897664' === $id_only['urn'], 'Numeric Share ID did not normalize to the Share URN.' );
 
 	$compact_iframe = LinkedInEmbed::parseInput( '<iframe src="https://www.linkedin.com/embed/feed/update/urn:li:share:7500553868422897664?collapsed=1" height="603" width="504" frameborder="0" title="Post intégré"></iframe>' );
 	atomic_social_assert( true === $compact_iframe['is_compact'] && 603 === $compact_iframe['height'], 'Compact iframe was not parsed correctly.' );
@@ -411,6 +411,10 @@ try {
 		atomic_social_assert( false, 'JavaScript iframe URLs must be rejected.' );
 	} catch ( Throwable ) {
 	}
+	$activity_public = LinkedInEmbed::parseInput( 'https://www.linkedin.com/posts/atomic-design-belgium_activity-1234567890123456789' );
+	atomic_social_assert( 'activity_fallback' === (string) $activity_public['strategy'] && 'urn:li:activity:1234567890123456789' === $activity_public['urn'], 'Activity public URL did not normalize.' );
+	$activity_feed = LinkedInEmbed::parseInput( 'https://www.linkedin.com/feed/update/urn:li:activity:1234567890123456789' );
+	atomic_social_assert( 'activity_fallback' === (string) $activity_feed['strategy'] && 'urn:li:activity:1234567890123456789' === $activity_feed['urn'], 'Activity feed/update URL did not normalize.' );
 	$checks[] = 'LinkedIn embed input allowlist parsing';
 
 	// LinkedIn embed admin page workflow: allow multiple different Share IDs, reject true duplicates.
@@ -428,6 +432,15 @@ try {
 	try {
 		$method->invoke( $posts_page, null, $test_id_one, '2026-01-03T10:00' );
 		atomic_social_assert( false, 'Duplicate Share ID should be rejected.' );
+	} catch ( Throwable ) {
+	}
+	// Activity fallback duplicates.
+	$activity_post = (int) $method->invoke( $posts_page, null, 'https://www.linkedin.com/feed/update/urn:li:activity:9990000000000000003', '2026-01-03T10:00' );
+	atomic_social_assert( $activity_post > 0, 'Creating an activity fallback post must succeed.' );
+	$created_post_ids[] = $activity_post;
+	try {
+		$method->invoke( $posts_page, null, 'https://www.linkedin.com/feed/update/urn:li:activity:9990000000000000003', '2026-01-03T10:00' );
+		atomic_social_assert( false, 'Duplicate activity URN should be rejected.' );
 	} catch ( Throwable ) {
 	}
 	$checks[] = 'LinkedIn embed duplicates: allow different IDs, reject duplicates';
@@ -559,6 +572,38 @@ try {
 	atomic_social_assert( str_contains( $embed_html, '#atomic-linkedin-post-' . $embed_post_a ), 'News CTA anchor fragment is missing.' );
 	atomic_social_assert( str_contains( $embed_html, get_permalink( $news_page_id ) ), 'News CTA permalink was not used.' );
 	$checks[] = 'LinkedIn embed-mode rendering + anchor + News CTA';
+
+	// Activity fallback rendering: compact must safely fall back to full (no collapsed=1 assumption).
+	$activity_embed = wp_insert_post(
+		array(
+			'post_type'     => SocialPostType::POST_TYPE,
+			'post_status'   => 'publish',
+			'post_title'    => 'LinkedIn Activity Embed',
+			'post_date_gmt' => $published_gmt,
+			'post_date'     => get_date_from_gmt( $published_gmt ),
+		)
+	);
+	atomic_social_assert( is_int( $activity_embed ) && $activity_embed > 0, 'Activity embed post could not be created.' );
+	$created_post_ids[] = $activity_embed;
+	update_post_meta( $activity_embed, MetaKeys::PROVIDER, 'linkedin' );
+	update_post_meta( $activity_embed, MetaKeys::INTEGRATION_MODE, IntegrationMode::EMBED );
+	update_post_meta( $activity_embed, MetaKeys::EMBED_STRATEGY, 'activity_fallback' );
+	update_post_meta( $activity_embed, MetaKeys::EMBED_URN, 'urn:li:activity:9990000000000000009' );
+	wp_set_object_terms( $activity_embed, 'linkedin', SocialPostType::PROVIDER_TAXONOMY );
+
+	$activity_attrs = $feed_renderer->attributes(
+		array(
+			'providers'    => array( 'linkedin' ),
+			'postsPerPage' => 10,
+			'pagination'   => 'none',
+			'presentation' => 'compact',
+		)
+	);
+	$activity_query = $feed_query->query( $activity_attrs );
+	$activity_html  = $feed_renderer->render( $activity_query, $activity_attrs );
+	atomic_social_assert( str_contains( $activity_html, 'urn:li:activity:9990000000000000009' ), 'Activity URN was not rendered.' );
+	atomic_social_assert( ! str_contains( $activity_html, 'urn:li:activity:9990000000000000009?collapsed=1' ), 'Activity embeds must not assume collapsed=1 works.' );
+	$checks[] = 'LinkedIn activity fallback rendering (safe compact fallback)';
 
 	Plugin::deactivate();
 	atomic_social_assert( false === wp_next_scheduled( Scheduler::HOOK ), 'Deactivation did not clear the scheduler.' );

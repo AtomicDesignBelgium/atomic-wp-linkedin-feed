@@ -25,7 +25,11 @@ final class LinkedInEmbed {
 	public const COMPACT_QUERY_VALUE = '1';
 
 	// V1 allowlist.
-	public const URN_SHARE_REGEX = '/^urn:li:share:\d+$/';
+	public const URN_SHARE_REGEX    = '/^urn:li:share:\d+$/';
+	public const URN_ACTIVITY_REGEX = '/^urn:li:activity:\d+$/';
+
+	public const STRATEGY_OFFICIAL         = 'official';
+	public const STRATEGY_ACTIVITY_FALLBACK = 'activity_fallback';
 
 	public const DEFAULT_HEIGHT_COMPACT = 650;
 	public const DEFAULT_HEIGHT_FULL    = 1350;
@@ -34,7 +38,7 @@ final class LinkedInEmbed {
 	public const MAX_HEIGHT = 3000;
 
 	/**
-	 * @return array{urn:string,is_compact:bool,height:int|null}
+	 * @return array{strategy:string,urn:string,is_compact:bool,height:int|null}
 	 */
 	public static function parseInput( string $input ): array {
 		// Normalize common copy/paste variants:
@@ -51,6 +55,7 @@ final class LinkedInEmbed {
 		// Numeric Share ID only.
 		if ( ctype_digit( $input ) ) {
 			return array(
+				'strategy'  => self::STRATEGY_OFFICIAL,
 				'urn'       => 'urn:li:share:' . $input,
 				'is_compact' => false,
 				'height'    => null,
@@ -62,29 +67,49 @@ final class LinkedInEmbed {
 		}
 
 		if ( str_starts_with( $input, 'http://' ) || str_starts_with( $input, 'https://' ) ) {
-			return self::parseEmbedUrl( $input );
+			return self::parseUrl( $input );
 		}
 
 		if ( str_starts_with( $input, 'urn:li:' ) ) {
-			if ( ! self::isSupportedUrn( $input ) ) {
-				throw new RuntimeException( __( 'Only LinkedIn Share URNs are supported in v1 (urn:li:share:<id>).', 'atomic-wp-social-sync' ) );
+			if ( self::isSupportedShareUrn( $input ) ) {
+				return array(
+					'strategy'  => self::STRATEGY_OFFICIAL,
+					'urn'       => $input,
+					'is_compact' => false,
+					'height'    => null,
+				);
 			}
-			return array(
-				'urn'       => $input,
-				'is_compact' => false,
-				'height'    => null,
-			);
+			if ( self::isSupportedActivityUrn( $input ) ) {
+				return array(
+					'strategy'  => self::STRATEGY_ACTIVITY_FALLBACK,
+					'urn'       => $input,
+					'is_compact' => false,
+					'height'    => null,
+				);
+			}
+			if ( str_starts_with( $input, 'urn:li:activity:' ) ) {
+				throw new RuntimeException( __( 'This LinkedIn post link contains an Activity URN that may not have an official embed. Atomic will attempt a compatibility embed only when a valid public LinkedIn post link is provided.', 'atomic-wp-social-sync' ) );
+			}
+			throw new RuntimeException( __( 'Only LinkedIn Share URNs or supported public LinkedIn post links are accepted.', 'atomic-wp-social-sync' ) );
 		}
 
-		throw new RuntimeException( __( 'Unrecognized LinkedIn embed input. Paste iframe code, an embed URL, or a Share URN.', 'atomic-wp-social-sync' ) );
+		throw new RuntimeException( __( 'Unrecognized LinkedIn input. Paste embed code, an embed URL, a Share URN, a Share ID, or a LinkedIn post link.', 'atomic-wp-social-sync' ) );
 	}
 
-	public static function isSupportedUrn( string $urn ): bool {
+	public static function isSupportedShareUrn( string $urn ): bool {
 		return (bool) preg_match( self::URN_SHARE_REGEX, $urn );
 	}
 
+	public static function isSupportedActivityUrn( string $urn ): bool {
+		return (bool) preg_match( self::URN_ACTIVITY_REGEX, $urn );
+	}
+
+	public static function isSupportedUrn( string $urn ): bool {
+		return self::isSupportedShareUrn( $urn ) || self::isSupportedActivityUrn( $urn );
+	}
+
 	/**
-	 * @return array{urn:string,is_compact:bool,height:int|null}
+	 * @return array{strategy:string,urn:string,is_compact:bool,height:int|null}
 	 */
 	private static function parseIframeHtml( string $html ): array {
 		$html = html_entity_decode( $html, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
@@ -136,15 +161,15 @@ final class LinkedInEmbed {
 			$height = $height_int;
 		}
 
-		$parsed = self::parseEmbedUrl( $src );
+		$parsed = self::parseUrl( $src );
 		$parsed['height'] = $height;
 		return $parsed;
 	}
 
 	/**
-	 * @return array{urn:string,is_compact:bool,height:int|null}
+	 * @return array{strategy:string,urn:string,is_compact:bool,height:int|null}
 	 */
-	public static function parseEmbedUrl( string $url ): array {
+	private static function parseUrl( string $url ): array {
 		$url = html_entity_decode( $url, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
 		$url = trim( str_replace( '`', '', $url ) );
 
@@ -157,21 +182,49 @@ final class LinkedInEmbed {
 			throw new RuntimeException( __( 'Embed URL must use HTTPS.', 'atomic-wp-social-sync' ) );
 		}
 		$host = strtolower( (string) ( $parts['host'] ?? '' ) );
-		if ( self::HOST !== $host ) {
-			throw new RuntimeException( __( 'Embed URL must be hosted on www.linkedin.com.', 'atomic-wp-social-sync' ) );
+		if ( 'www.linkedin.com' !== $host && 'linkedin.com' !== $host ) {
+			throw new RuntimeException( __( 'LinkedIn URLs must be hosted on linkedin.com.', 'atomic-wp-social-sync' ) );
 		}
 		$path = (string) ( $parts['path'] ?? '' );
-		if ( ! str_starts_with( $path, self::EMBED_PATH_PREFIX ) ) {
-			throw new RuntimeException( __( 'Embed URL must start with /embed/feed/update/.', 'atomic-wp-social-sync' ) );
+
+		// Official embed URL path.
+		if ( str_starts_with( $path, self::EMBED_PATH_PREFIX ) ) {
+			return self::parseEmbedUrlPath( $parts );
 		}
 
-		$urn = substr( $path, strlen( self::EMBED_PATH_PREFIX ) );
-		$urn = rtrim( $urn, '/' );
-		if ( ! self::isSupportedUrn( $urn ) ) {
+		// Public post permalink (compatibility fallback): extract activity id from known forms.
+		$activity_id = self::extractActivityIdFromUrl( $url );
+		if ( null !== $activity_id ) {
+			return array(
+				'strategy'   => self::STRATEGY_ACTIVITY_FALLBACK,
+				'urn'        => 'urn:li:activity:' . $activity_id,
+				'is_compact' => false,
+				'height'     => null,
+			);
+		}
+
+		throw new RuntimeException( __( 'Unsupported LinkedIn URL. Paste an official LinkedIn embed URL or a public LinkedIn post link.', 'atomic-wp-social-sync' ) );
+	}
+
+	/**
+	 * @param array<string,mixed> $parts
+	 * @return array{strategy:string,urn:string,is_compact:bool,height:int|null}
+	 */
+	private static function parseEmbedUrlPath( array $parts ): array {
+		$path = (string) ( $parts['path'] ?? '' );
+		$urn  = substr( $path, strlen( self::EMBED_PATH_PREFIX ) );
+		$urn  = rtrim( (string) $urn, '/' );
+
+		$strategy = null;
+		if ( self::isSupportedShareUrn( $urn ) ) {
+			$strategy = self::STRATEGY_OFFICIAL;
+		} elseif ( self::isSupportedActivityUrn( $urn ) ) {
+			$strategy = self::STRATEGY_ACTIVITY_FALLBACK;
+		} else {
 			if ( str_starts_with( $urn, 'urn:li:activity:' ) ) {
-				throw new RuntimeException( __( 'Activity URNs are not supported for embeds in v1. Use the Share URN from the official embed.', 'atomic-wp-social-sync' ) );
+				throw new RuntimeException( __( 'Unsupported LinkedIn Activity embed URL. Paste the public LinkedIn post link instead.', 'atomic-wp-social-sync' ) );
 			}
-			throw new RuntimeException( __( 'Unsupported embed URN. Only urn:li:share:<id> is supported in v1.', 'atomic-wp-social-sync' ) );
+			throw new RuntimeException( __( 'Unsupported LinkedIn embed URN.', 'atomic-wp-social-sync' ) );
 		}
 
 		$is_compact = false;
@@ -189,20 +242,40 @@ final class LinkedInEmbed {
 		}
 
 		return array(
+			'strategy'   => $strategy ?? self::STRATEGY_OFFICIAL,
 			'urn'        => $urn,
 			'is_compact' => $is_compact,
 			'height'     => null,
 		);
 	}
 
-	public static function embedUrl( string $urn, string $presentation ): string {
+	public static function embedUrl( string $urn, string $presentation, string $strategy = self::STRATEGY_OFFICIAL ): string {
 		if ( ! self::isSupportedUrn( $urn ) ) {
 			return '';
 		}
 		$base = 'https://' . self::HOST . self::EMBED_PATH_PREFIX . $urn;
+
+		// Compatibility embeds: do not assume the compact variant works.
+		if ( self::STRATEGY_ACTIVITY_FALLBACK === $strategy ) {
+			return $base;
+		}
+
 		if ( 'compact' === $presentation ) {
 			return $base . '?' . rawurlencode( self::COMPACT_QUERY_KEY ) . '=' . rawurlencode( self::COMPACT_QUERY_VALUE );
 		}
 		return $base;
+	}
+
+	private static function extractActivityIdFromUrl( string $url ): ?string {
+		$url = html_entity_decode( $url, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+		$url = str_replace( '`', '', $url );
+
+		if ( preg_match( '/urn:li:activity:(\d+)/i', $url, $m ) ) {
+			return $m[1];
+		}
+		if ( preg_match( '/activity-(\d+)/i', $url, $m ) ) {
+			return $m[1];
+		}
+		return null;
 	}
 }

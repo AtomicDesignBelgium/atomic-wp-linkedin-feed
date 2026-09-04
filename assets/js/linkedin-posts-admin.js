@@ -16,6 +16,7 @@
 	var cancelBtn = qs( '#atomic-linkedin-cancel' );
 	var saveBtn = qs( '#atomic-linkedin-save' );
 	var addBtn = qs( '#atomic-linkedin-feed-add' );
+	var previewBtn = qs( '#atomic-linkedin-preview' );
 
 	var i18n = cfg.i18n || {};
 
@@ -40,15 +41,23 @@
 		var m;
 		m = raw.match( /urn:li:share:(\d+)/i );
 		if ( m && m[ 1 ] ) {
-			return { shareId: m[ 1 ], urn: 'urn:li:share:' + m[ 1 ] };
+			return { strategy: 'official', id: m[ 1 ], urn: 'urn:li:share:' + m[ 1 ] };
 		}
 		m = raw.match( /linkedin\.com\/embed\/feed\/update\/urn:li:share:(\d+)/i );
 		if ( m && m[ 1 ] ) {
-			return { shareId: m[ 1 ], urn: 'urn:li:share:' + m[ 1 ] };
+			return { strategy: 'official', id: m[ 1 ], urn: 'urn:li:share:' + m[ 1 ] };
+		}
+		m = raw.match( /urn:li:activity:(\d+)/i );
+		if ( m && m[ 1 ] ) {
+			return { strategy: 'activity_fallback', id: m[ 1 ], urn: 'urn:li:activity:' + m[ 1 ] };
+		}
+		m = raw.match( /activity-(\d+)/i );
+		if ( m && m[ 1 ] ) {
+			return { strategy: 'activity_fallback', id: m[ 1 ], urn: 'urn:li:activity:' + m[ 1 ] };
 		}
 		m = raw.match( /^(\d+)$/ );
 		if ( m && m[ 1 ] ) {
-			return { shareId: m[ 1 ], urn: 'urn:li:share:' + m[ 1 ] };
+			return { strategy: 'official', id: m[ 1 ], urn: 'urn:li:share:' + m[ 1 ] };
 		}
 		return null;
 	}
@@ -80,6 +89,10 @@
 	function renderDetection( parsed ) {
 		var shareIdLabel = i18n.shareId || 'Share ID';
 		var urnLabel = i18n.normalizedUrn || 'Normalized URN';
+		var methodLabel = i18n.method || 'Method';
+		var officialLabel = i18n.methodOfficial || 'Official LinkedIn embed';
+		var compatLabel = i18n.methodCompat || 'Compatibility embed';
+		var compatMsg = i18n.compatMessage || 'LinkedIn does not provide an official embed option for some post formats. Atomic will attempt to display this post using LinkedIn\\'s public embed renderer. Preview the post before publishing.';
 		if ( ! parsed ) {
 			setHtml(
 				result,
@@ -89,12 +102,20 @@
 			);
 			return;
 		}
+		var isCompat = parsed.strategy === 'activity_fallback';
+		var method = isCompat ? compatLabel : officialLabel;
+		var prefix = isCompat ? '⚠' : '✓';
+		var title = isCompat ? ( i18n.postDetectedCompat || 'LinkedIn post detected' ) : ( i18n.postDetected || 'LinkedIn post detected' );
 		setHtml(
 			result,
 			'<div style="padding:8px 10px;background:#f6f7f7;border:1px solid #dcdcde;border-radius:2px;">' +
-				'<p style="margin:0 0 6px 0;color:#008a20;"><strong>✓ ' + escapeHtml( i18n.postDetected || 'LinkedIn post detected' ) + '</strong></p>' +
-				'<p style="margin:0 0 6px 0;"><strong>' + escapeHtml( shareIdLabel ) + '</strong><br><code>' + escapeHtml( parsed.shareId ) + '</code></p>' +
-				'<p style="margin:0;"><strong>' + escapeHtml( urnLabel ) + '</strong><br><code>' + escapeHtml( parsed.urn ) + '</code></p>' +
+				'<p style="margin:0 0 6px 0;' + ( isCompat ? 'color:#b45309' : 'color:#008a20' ) + '"><strong>' + prefix + ' ' + escapeHtml( title ) + '</strong></p>' +
+				'<p style="margin:0 0 6px 0;"><strong>' + escapeHtml( methodLabel ) + '</strong><br>' + escapeHtml( method ) + '</p>' +
+				( isCompat ? '<p style="margin:0 0 8px 0;"><em>' + escapeHtml( compatMsg ) + '</em></p>' : '' ) +
+				'<details><summary>' + escapeHtml( i18n.techDetails || 'Technical details' ) + '</summary>' +
+					'<p style="margin:8px 0 6px 0;"><strong>' + escapeHtml( shareIdLabel ) + '</strong><br><code>' + escapeHtml( parsed.id ) + '</code></p>' +
+					'<p style="margin:0;"><strong>' + escapeHtml( urnLabel ) + '</strong><br><code>' + escapeHtml( parsed.urn ) + '</code></p>' +
+				'</details>' +
 			'</div>'
 		);
 	}
@@ -220,6 +241,28 @@
 		cancelBtn.addEventListener( 'click', function () {
 			resetForm( 'add' );
 			closeThickbox();
+		} );
+	}
+
+	if ( previewBtn ) {
+		previewBtn.addEventListener( 'click', function () {
+			var parsed = parseLinkedInInput( embedField ? embedField.value : '' );
+			if ( ! parsed ) {
+				showError( 'Paste a LinkedIn embed or post link first.' );
+				return;
+			}
+			var isCompat = parsed.strategy === 'activity_fallback';
+			var title = isCompat ? ( i18n.compatPreviewTitle || 'Compatibility preview' ) : ( i18n.previewTitle || 'LinkedIn preview' );
+			var src = isCompat
+				? ( 'https://www.linkedin.com/embed/feed/update/' + parsed.urn )
+				: ( 'https://www.linkedin.com/embed/feed/update/' + parsed.urn + '?collapsed=1' );
+			var html = '<p style="margin-top:0;"><strong>' + escapeHtml( title ) + '</strong></p>' +
+				'<iframe style="width:100%;border:0" src="' + escapeHtml( src ) + '" height="650" title="' + escapeHtml( title ) + '" loading="lazy" allowfullscreen></iframe>' +
+				'<p class="description" style="margin-bottom:0;">' + escapeHtml( 'Atomic cannot reliably inspect LinkedIn iframe contents. Preview visually before publishing.' ) + '</p>';
+			setHtml( qs( '#atomic-linkedin-preview-container' ), html );
+			if ( window.tb_show ) {
+				window.tb_show( title, '#TB_inline?width=700&height=720&inlineId=atomic-linkedin-preview-modal' );
+			}
 		} );
 	}
 

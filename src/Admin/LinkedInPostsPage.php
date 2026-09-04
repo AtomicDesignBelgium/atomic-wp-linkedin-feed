@@ -80,6 +80,12 @@ final class LinkedInPostsPage {
 					'postDetected'   => __( 'LinkedIn post detected', 'atomic-wp-social-sync' ),
 					'shareId'        => __( 'Share ID', 'atomic-wp-social-sync' ),
 					'normalizedUrn'  => __( 'Normalized URN', 'atomic-wp-social-sync' ),
+					'method'         => __( 'Method', 'atomic-wp-social-sync' ),
+					'methodOfficial' => __( 'Official LinkedIn embed', 'atomic-wp-social-sync' ),
+					'methodCompat'   => __( 'Compatibility embed', 'atomic-wp-social-sync' ),
+					'compatMessage'  => __( 'LinkedIn does not provide an official embed option for some post formats. Atomic will attempt to display this post using LinkedIn\'s public embed renderer. Preview the post before publishing.', 'atomic-wp-social-sync' ),
+					'techDetails'    => __( 'Technical details', 'atomic-wp-social-sync' ),
+					'compatPreviewTitle' => __( 'Compatibility preview', 'atomic-wp-social-sync' ),
 				),
 			)
 		);
@@ -202,8 +208,8 @@ final class LinkedInPostsPage {
 				<input type="hidden" name="post_id" id="atomic-linkedin-post-id" value="">
 
 				<p>
-					<label for="atomic-linkedin-embed"><strong><?php esc_html_e( 'LinkedIn Embed / Share ID', 'atomic-wp-social-sync' ); ?></strong></label>
-					<span class="description" style="display:block;"><?php esc_html_e( 'Paste the LinkedIn embed code, embed URL, Share URN, or Share ID.', 'atomic-wp-social-sync' ); ?></span>
+					<label for="atomic-linkedin-embed"><strong><?php esc_html_e( 'LinkedIn post', 'atomic-wp-social-sync' ); ?></strong></label>
+					<span class="description" style="display:block;"><?php esc_html_e( 'Paste the LinkedIn embed code or the LinkedIn post link.', 'atomic-wp-social-sync' ); ?></span>
 					<textarea class="widefat" rows="4" id="atomic-linkedin-embed" name="embed_input" placeholder="urn:li:share:7500553868422897664"></textarea>
 				</p>
 
@@ -217,6 +223,7 @@ final class LinkedInPostsPage {
 
 				<p style="margin-top:16px;">
 					<button type="submit" class="button button-primary" id="atomic-linkedin-save"><?php esc_html_e( 'Add post', 'atomic-wp-social-sync' ); ?></button>
+					<button type="button" class="button" id="atomic-linkedin-preview"><?php esc_html_e( 'Preview', 'atomic-wp-social-sync' ); ?></button>
 					<button type="button" class="button" id="atomic-linkedin-cancel"><?php esc_html_e( 'Cancel', 'atomic-wp-social-sync' ); ?></button>
 				</p>
 			</form>
@@ -369,10 +376,11 @@ final class LinkedInPostsPage {
 
 	private function createOrUpdateEmbedPost( ?int $post_id, string $input, string $published_local ): int {
 		$parsed = LinkedInEmbed::parseInput( $input );
+		$strategy = (string) ( $parsed['strategy'] ?? LinkedInEmbed::STRATEGY_OFFICIAL );
 		$urn    = $parsed['urn'];
 
 		// Duplicate handling: allow unlimited different Share IDs, but reject duplicates of the same Share URN.
-		$existing_id = $this->findExistingEmbedPostIdByUrn( $urn, $post_id );
+		$existing_id = $this->findExistingEmbedPostIdByStrategyUrn( $strategy, $urn, $post_id );
 		if ( null !== $existing_id ) {
 			throw new RuntimeException( __( 'This LinkedIn post has already been added.', 'atomic-wp-social-sync' ) );
 		}
@@ -432,6 +440,7 @@ final class LinkedInPostsPage {
 		update_post_meta( $post_id, MetaKeys::PROVIDER, 'linkedin' );
 		update_post_meta( $post_id, MetaKeys::EXTERNAL_ID, $urn );
 		update_post_meta( $post_id, MetaKeys::EXTERNAL_URL, esc_url_raw( 'https://www.linkedin.com/feed/update/' . $urn . '/' ) );
+		update_post_meta( $post_id, MetaKeys::EMBED_STRATEGY, $strategy );
 		update_post_meta( $post_id, MetaKeys::EMBED_URN, $urn );
 		update_post_meta( $post_id, MetaKeys::DETACHED, '1' );
 		update_post_meta( $post_id, MetaKeys::REMOTE_STATUS, 'embedded' );
@@ -462,7 +471,7 @@ final class LinkedInPostsPage {
 		return (int) $post_id;
 	}
 
-	private function findExistingEmbedPostIdByUrn( string $urn, ?int $exclude_post_id ): ?int {
+	private function findExistingEmbedPostIdByStrategyUrn( string $strategy, string $urn, ?int $exclude_post_id ): ?int {
 		$args = array(
 			'post_type'      => SocialPostType::POST_TYPE,
 			'post_status'    => array( 'publish', 'draft', 'pending', 'private' ),
@@ -472,6 +481,7 @@ final class LinkedInPostsPage {
 			'meta_query'     => array(
 				array( 'key' => MetaKeys::INTEGRATION_MODE, 'value' => IntegrationMode::EMBED ),
 				array( 'key' => MetaKeys::PROVIDER, 'value' => 'linkedin' ),
+				array( 'key' => MetaKeys::EMBED_STRATEGY, 'value' => $strategy ),
 				array( 'key' => MetaKeys::EMBED_URN, 'value' => $urn ),
 			),
 		);

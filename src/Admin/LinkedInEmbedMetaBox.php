@@ -134,11 +134,13 @@ final class LinkedInEmbedMetaBox {
 		try {
 			$parsed = LinkedInEmbed::parseInput( $input );
 			$urn    = $parsed['urn'];
+			$strategy = (string) ( $parsed['strategy'] ?? LinkedInEmbed::STRATEGY_OFFICIAL );
 
 			update_post_meta( $post_id, MetaKeys::INTEGRATION_MODE, IntegrationMode::EMBED );
 			update_post_meta( $post_id, MetaKeys::PROVIDER, 'linkedin' );
 			update_post_meta( $post_id, MetaKeys::EXTERNAL_ID, $urn );
 			update_post_meta( $post_id, MetaKeys::EXTERNAL_URL, esc_url_raw( 'https://www.linkedin.com/feed/update/' . $urn . '/' ) );
+			update_post_meta( $post_id, MetaKeys::EMBED_STRATEGY, $strategy );
 			update_post_meta( $post_id, MetaKeys::EMBED_URN, $urn );
 			update_post_meta( $post_id, MetaKeys::DETACHED, '1' );
 			update_post_meta( $post_id, MetaKeys::REMOTE_STATUS, 'embedded' );

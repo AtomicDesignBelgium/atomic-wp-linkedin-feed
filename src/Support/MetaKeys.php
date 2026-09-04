@@ -41,6 +41,8 @@ final class MetaKeys {
 
 	// Integration modes (import/embed/link). Missing means legacy import behavior.
 	public const INTEGRATION_MODE       = '_atomic_social_integration_mode';
+	// LinkedIn embed storage (embed-mode only).
+	public const EMBED_STRATEGY         = '_atomic_social_embed_strategy';
 	public const EMBED_URN              = '_atomic_social_embed_urn';
 	public const EMBED_HEIGHT_COMPACT   = '_atomic_social_embed_height_compact';
 	public const EMBED_HEIGHT_FULL      = '_atomic_social_embed_height_full';

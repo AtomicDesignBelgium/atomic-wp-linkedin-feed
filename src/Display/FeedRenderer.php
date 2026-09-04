@@ -106,6 +106,9 @@ final class FeedRenderer {
 			return '<article id="' . esc_attr( $anchor ) . '" class="atomic-social-card atomic-social-card--linkedin"><div class="atomic-social-card__body"><p class="atomic-social-feed__empty">' . esc_html__( 'LinkedIn embed is not configured.', 'atomic-wp-social-sync' ) . '</p></div></article>';
 		}
 
+		$strategy = (string) get_post_meta( $post->ID, MetaKeys::EMBED_STRATEGY, true );
+		$strategy = '' !== $strategy ? $strategy : LinkedInEmbed::STRATEGY_OFFICIAL;
+
 		$presentation = $attributes['presentation'];
 		if ( 'auto' === $presentation ) {
 			$presentation = '' !== (string) get_post_meta( $post->ID, MetaKeys::EMBED_HEIGHT_COMPACT, true ) ? 'compact' : 'full';
@@ -114,10 +117,10 @@ final class FeedRenderer {
 			$presentation = 'full';
 		}
 
-		$src = LinkedInEmbed::embedUrl( $urn, $presentation );
+		$src = LinkedInEmbed::embedUrl( $urn, $presentation, $strategy );
 		if ( '' === $src && 'compact' === $presentation ) {
 			$presentation = 'full';
-			$src          = LinkedInEmbed::embedUrl( $urn, $presentation );
+			$src          = LinkedInEmbed::embedUrl( $urn, $presentation, $strategy );
 		}
 		if ( '' === $src ) {
 			return '<article id="' . esc_attr( $anchor ) . '" class="atomic-social-card atomic-social-card--linkedin"><div class="atomic-social-card__body"><p class="atomic-social-feed__empty">' . esc_html__( 'LinkedIn embed URL could not be generated.', 'atomic-wp-social-sync' ) . '</p></div></article>';
