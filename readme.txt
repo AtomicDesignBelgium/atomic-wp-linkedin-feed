@@ -4,7 +4,7 @@ Tags: social media, linkedin, import, sync, gutenberg
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 0.1.0
+Stable tag: 0.9.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -58,7 +58,7 @@ No. Imported Social Posts, media, and editorial changes remain. Only settings, c
 
 = Why is a LinkedIn write scope requested by an import plugin? =
 
-LinkedIn's current versioned Images API documents `w_organization_social` as required for organization image retrieval. Version 0.1.0 does not expose publishing and reports create/update/delete provider capabilities as disabled.
+LinkedIn's current versioned Images API documents `w_organization_social` as required for organization image retrieval. Version 0.9.0 does not expose publishing and reports create/update/delete provider capabilities as disabled.
 
 = Are refresh tokens supported? =
 
