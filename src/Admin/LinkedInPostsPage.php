@@ -52,11 +52,13 @@ final class LinkedInPostsPage {
 			return;
 		}
 		add_thickbox();
+		$asset_path = ATOMIC_WP_SOCIAL_SYNC_PATH . 'assets/js/linkedin-posts-admin.js';
+		$asset_ver  = file_exists( $asset_path ) ? (string) filemtime( $asset_path ) : ATOMIC_WP_SOCIAL_SYNC_VERSION;
 		wp_enqueue_script(
 			'atomic-linkedin-feed-admin',
 			ATOMIC_WP_SOCIAL_SYNC_URL . 'assets/js/linkedin-posts-admin.js',
 			array(),
-			ATOMIC_WP_SOCIAL_SYNC_VERSION,
+			$asset_ver,
 			true
 		);
 		wp_localize_script(

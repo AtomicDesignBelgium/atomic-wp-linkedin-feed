@@ -92,7 +92,7 @@
 		var methodLabel = i18n.method || 'Method';
 		var officialLabel = i18n.methodOfficial || 'Official LinkedIn embed';
 		var compatLabel = i18n.methodCompat || 'Compatibility embed';
-		var compatMsg = i18n.compatMessage || 'LinkedIn does not provide an official embed option for some post formats. Atomic will attempt to display this post using LinkedIn\\'s public embed renderer. Preview the post before publishing.';
+		var compatMsg = i18n.compatMessage || "LinkedIn does not provide an official embed option for some post formats. Atomic will attempt to display this post using LinkedIn's public embed renderer. Preview the post before publishing.";
 		if ( ! parsed ) {
 			setHtml(
 				result,
