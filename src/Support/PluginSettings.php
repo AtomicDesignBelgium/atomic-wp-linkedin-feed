@@ -46,12 +46,68 @@ final class PluginSettings {
 			'news_page_id'            => 0,
 			'linkedin_client_id'      => '',
 			'debug_logging'           => false,
+
+			// LinkedIn Sources (metadata only; no HTTP fetch).
+			'linkedin_sources'        => array(),
+
+			// Design / appearance (Atomic-controlled outer wrapper styling).
+			'design_border_style'     => 'solid', // solid|none
+			'design_border_width'     => 1,
+			'design_border_color'     => '',
+			'design_radius'           => 12,
+			'design_background'       => '',
+			'design_shadow'           => 'none', // none|subtle
+			'design_hover'            => 'none', // none|lift|scale
+			'design_transition_ms'    => 200,
+
+			// Layout & spacing defaults (used when blocks don't override).
+			'layout_gap'              => 'medium', // small|medium|large
+			'layout_min_width'        => 340,
+			'layout_separator_enabled'   => false,
+			'layout_separator_thickness' => 1,
+			'layout_separator_color'     => '',
+			'layout_separator_spacing'   => 40,
+
+			// Pagination defaults (visual only; semantics unchanged).
+			'pagination_font_size'            => 16,
+			'pagination_font_weight'          => 600,
+			'pagination_min_width'            => 44,
+			'pagination_padding_x'            => 14,
+			'pagination_padding_y'            => 10,
+			'pagination_gap'                  => 8,
+			'pagination_radius'               => 6,
+			'pagination_border_style'         => 'solid', // solid|none
+			'pagination_border_width'         => 1,
+			'pagination_border_color'         => '',
+			'pagination_color'                => '',
+			'pagination_background'           => '',
+			'pagination_active_color'         => '',
+			'pagination_active_background'    => '',
+			'pagination_active_border_color'  => '',
+			'pagination_hover_color'          => '',
+			'pagination_hover_background'     => '',
+			'pagination_hover_border_color'   => '',
+			'pagination_shadow'               => 'none', // none|subtle
+			'pagination_transition_ms'        => 200,
 		);
 	}
 
 	/** @param mixed $input @return array<string,mixed> */
 	public static function sanitize( mixed $input ): array {
 		$input = is_array( $input ) ? $input : array();
+		$border_style = self::allowed( $input['design_border_style'] ?? '', array( 'solid' => 'solid', 'none' => 'none' ), 'solid' );
+		$shadow = self::allowed( $input['design_shadow'] ?? '', array( 'none' => 'none', 'subtle' => 'subtle' ), 'none' );
+		$hover = self::allowed( $input['design_hover'] ?? '', array( 'none' => 'none', 'lift' => 'lift', 'scale' => 'scale' ), 'none' );
+
+		$layout_gap = self::allowed( $input['layout_gap'] ?? '', array( 'small' => 'small', 'medium' => 'medium', 'large' => 'large' ), 'medium' );
+
+		$pagination_border_style = self::allowed( $input['pagination_border_style'] ?? '', array( 'solid' => 'solid', 'none' => 'none' ), 'solid' );
+		$pagination_shadow = self::allowed( $input['pagination_shadow'] ?? '', array( 'none' => 'none', 'subtle' => 'subtle' ), 'none' );
+
+		$color_or_empty = static function ( mixed $value ): string {
+			return self::sanitizeColorValue( (string) $value );
+		};
+
 		return array(
 			'default_sync_frequency' => self::allowed( $input['default_sync_frequency'] ?? '', self::frequencies(), self::FREQUENCY_TWICE ),
 			'remote_edit_policy'      => self::allowed( $input['remote_edit_policy'] ?? '', self::editPolicies(), self::EDIT_AUTOMATIC ),
@@ -61,7 +117,169 @@ final class PluginSettings {
 			'news_page_id'            => absint( $input['news_page_id'] ?? 0 ),
 			'linkedin_client_id'      => sanitize_text_field( (string) ( $input['linkedin_client_id'] ?? '' ) ),
 			'debug_logging'           => ! empty( $input['debug_logging'] ),
+
+			'linkedin_sources'        => self::sanitizeLinkedInSources( $input['linkedin_sources'] ?? array() ),
+
+			'design_border_style'     => $border_style,
+			'design_border_width'     => max( 0, min( 12, absint( $input['design_border_width'] ?? 1 ) ) ),
+			'design_border_color'     => $color_or_empty( $input['design_border_color'] ?? '' ),
+			'design_radius'           => max( 0, min( 40, absint( $input['design_radius'] ?? 12 ) ) ),
+			'design_background'       => $color_or_empty( $input['design_background'] ?? '' ),
+			'design_shadow'           => $shadow,
+			'design_hover'            => $hover,
+			'design_transition_ms'    => max( 0, min( 2000, absint( $input['design_transition_ms'] ?? 200 ) ) ),
+
+			'layout_gap'              => $layout_gap,
+			'layout_min_width'        => max( 280, min( 600, absint( $input['layout_min_width'] ?? 340 ) ) ),
+			'layout_separator_enabled'   => ! empty( $input['layout_separator_enabled'] ),
+			'layout_separator_thickness' => max( 0, min( 12, absint( $input['layout_separator_thickness'] ?? 1 ) ) ),
+			'layout_separator_color'     => $color_or_empty( $input['layout_separator_color'] ?? '' ),
+			'layout_separator_spacing'   => max( 0, min( 120, absint( $input['layout_separator_spacing'] ?? 40 ) ) ),
+
+			'pagination_font_size'           => max( 10, min( 26, absint( $input['pagination_font_size'] ?? 16 ) ) ),
+			'pagination_font_weight'         => max( 200, min( 900, absint( $input['pagination_font_weight'] ?? 600 ) ) ),
+			'pagination_min_width'           => max( 28, min( 120, absint( $input['pagination_min_width'] ?? 44 ) ) ),
+			'pagination_padding_x'           => max( 0, min( 40, absint( $input['pagination_padding_x'] ?? 14 ) ) ),
+			'pagination_padding_y'           => max( 0, min( 30, absint( $input['pagination_padding_y'] ?? 10 ) ) ),
+			'pagination_gap'                 => max( 0, min( 30, absint( $input['pagination_gap'] ?? 8 ) ) ),
+			'pagination_radius'              => max( 0, min( 30, absint( $input['pagination_radius'] ?? 6 ) ) ),
+			'pagination_border_style'        => $pagination_border_style,
+			'pagination_border_width'        => max( 0, min( 12, absint( $input['pagination_border_width'] ?? 1 ) ) ),
+			'pagination_border_color'        => $color_or_empty( $input['pagination_border_color'] ?? '' ),
+			'pagination_color'               => $color_or_empty( $input['pagination_color'] ?? '' ),
+			'pagination_background'          => $color_or_empty( $input['pagination_background'] ?? '' ),
+			'pagination_active_color'        => $color_or_empty( $input['pagination_active_color'] ?? '' ),
+			'pagination_active_background'   => $color_or_empty( $input['pagination_active_background'] ?? '' ),
+			'pagination_active_border_color' => $color_or_empty( $input['pagination_active_border_color'] ?? '' ),
+			'pagination_hover_color'         => $color_or_empty( $input['pagination_hover_color'] ?? '' ),
+			'pagination_hover_background'    => $color_or_empty( $input['pagination_hover_background'] ?? '' ),
+			'pagination_hover_border_color'  => $color_or_empty( $input['pagination_hover_border_color'] ?? '' ),
+			'pagination_shadow'              => $pagination_shadow,
+			'pagination_transition_ms'       => max( 0, min( 2000, absint( $input['pagination_transition_ms'] ?? 200 ) ) ),
 		);
+	}
+
+	private static function sanitizeColorValue( string $value ): string {
+		$value = trim( $value );
+		if ( '' === $value ) {
+			return '';
+		}
+
+		// Theme preset reference (keep identity).
+		if ( preg_match( '/^var\(--wp--preset--color--[a-z0-9-]+\)$/', $value ) ) {
+			return $value;
+		}
+
+		$hex = sanitize_hex_color( $value );
+		if ( $hex ) {
+			return $hex;
+		}
+
+		// Allow rgb()/rgba() and transparent for backward compatibility / advanced usage.
+		$lower = strtolower( $value );
+		if ( 'transparent' === $lower ) {
+			return 'transparent';
+		}
+		if ( preg_match( '/^rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}(?:\s*,\s*(?:0|1|0?\.\d+))?\s*\)$/', $lower ) ) {
+			return $value;
+		}
+
+		return '';
+	}
+
+	/**
+	 * @param mixed $input
+	 * @return array<int,array{id:string,label:string,url:string,is_default:bool}>
+	 */
+	public static function sanitizeLinkedInSources( mixed $input ): array {
+		$rows = is_array( $input ) ? $input : array();
+		$sources = array();
+		$default_candidate = '';
+
+		foreach ( $rows as $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+			$label = sanitize_text_field( (string) ( $row['label'] ?? '' ) );
+			$url   = trim( (string) ( $row['url'] ?? '' ) );
+			$id    = sanitize_text_field( (string) ( $row['id'] ?? '' ) );
+			$is_default = ! empty( $row['is_default'] );
+
+			// Ignore blank rows.
+			if ( '' === $label && '' === $url ) {
+				continue;
+			}
+
+			$normalized_url = self::normalizeLinkedInSourceUrl( $url );
+			if ( '' === $label || '' === $normalized_url ) {
+				// Invalid rows are dropped (caller UI should show a notice on save).
+				continue;
+			}
+
+			if ( '' === $id ) {
+				$id = wp_generate_uuid4();
+			}
+
+			if ( $is_default && '' === $default_candidate ) {
+				$default_candidate = $id;
+			}
+
+			$sources[] = array(
+				'id'         => $id,
+				'label'      => $label,
+				'url'        => $normalized_url,
+				'is_default' => false, // set in a second pass.
+			);
+		}
+
+		// Enforce "at most one default".
+		if ( '' !== $default_candidate ) {
+			foreach ( $sources as &$s ) {
+				$s['is_default'] = ( $s['id'] === $default_candidate );
+			}
+			unset( $s );
+		}
+
+		return array_values( $sources );
+	}
+
+	private static function normalizeLinkedInSourceUrl( string $url ): string {
+		$url = trim( $url );
+		if ( '' === $url ) {
+			return '';
+		}
+
+		$parts = wp_parse_url( $url );
+		if ( ! is_array( $parts ) ) {
+			return '';
+		}
+		$scheme = strtolower( (string) ( $parts['scheme'] ?? '' ) );
+		$host   = strtolower( (string) ( $parts['host'] ?? '' ) );
+		$path   = (string) ( $parts['path'] ?? '' );
+
+		if ( 'https' !== $scheme ) {
+			return '';
+		}
+		if ( ! in_array( $host, array( 'linkedin.com', 'www.linkedin.com' ), true ) ) {
+			return '';
+		}
+
+		// Normalize common harmless variations:
+		// - Allow /company/<slug> (append /posts/)
+		// - Allow /company/<slug>/posts (append trailing slash)
+		$path = '/' . ltrim( $path, '/' );
+		$path = preg_replace( '#/+#', '/', $path );
+		$path = rtrim( $path, '/' );
+
+		if ( preg_match( '#^/(company|showcase|school)/[^/]+$#', $path ) ) {
+			$path .= '/posts';
+		}
+
+		if ( ! preg_match( '#^/(company|showcase|school)/[^/]+/posts$#', $path ) ) {
+			return '';
+		}
+
+		return 'https://www.linkedin.com' . $path . '/';
 	}
 
 	/** @return array<string,string> */

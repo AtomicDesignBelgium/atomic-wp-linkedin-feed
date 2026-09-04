@@ -23,7 +23,7 @@ final class Shortcode {
 				'card_link' => 'original', 'pagination' => 'none', 'gap' => 'medium', 'image_ratio' => 'auto',
 				'presentation' => 'auto',
 				'show_full_news_cta' => 'false',
-				'full_news_cta_label' => __( 'View full news', 'atomic-wp-social-sync' ),
+				'full_news_cta_label' => __( 'View all news', 'atomic-wp-social-sync' ),
 				'news_page' => 0,
 			),
 			is_array( $attributes ) ? $attributes : array(),

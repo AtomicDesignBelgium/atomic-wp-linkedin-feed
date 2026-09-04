@@ -44,7 +44,7 @@ composer phpcs
 4. Test activation/deactivation and both single-page settings, including rewrite behavior.
 5. Test OAuth with Development-tier credentials, then with the intended production tier.
 6. Verify Client Secret/access/refresh/auth codes are absent from HTML, REST, logs, fixtures, and commits.
-7. Keep `atomic-wp-social-sync.php`, `composer.json`, `README.md`, `readme.txt`, and changelog version/attribution aligned.
+7. Keep `atomic-wp-linkedin-feed.php`, `composer.json`, `README.md`, `readme.txt`, and changelog version/attribution aligned.
 
 ## Known test boundary
 

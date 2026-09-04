@@ -13,8 +13,8 @@ if ( '1' !== getenv( 'ATOMIC_SOCIAL_RUN_TESTS' ) ) {
 require_once dirname( __DIR__, 4 ) . '/wp-load.php';
 require_once ABSPATH . 'wp-admin/includes/plugin.php';
 
-if ( ! is_plugin_active( 'atomic-wp-social-sync/atomic-wp-social-sync.php' ) ) {
-	$result = activate_plugin( 'atomic-wp-social-sync/atomic-wp-social-sync.php' );
+if ( ! is_plugin_active( 'atomic-wp-linkedin-feed/atomic-wp-linkedin-feed.php' ) ) {
+	$result = activate_plugin( 'atomic-wp-linkedin-feed/atomic-wp-linkedin-feed.php' );
 	if ( is_wp_error( $result ) ) {
 		throw new RuntimeException( $result->get_error_message() );
 	}
@@ -45,6 +45,7 @@ use AtomicWPSocialSync\Support\IntegrationMode;
 use AtomicWPSocialSync\Support\Logger;
 use AtomicWPSocialSync\Support\MetaKeys;
 use AtomicWPSocialSync\Support\PluginSettings;
+use AtomicWPSocialSync\Import\LinkedInHtmlImportParser;
 use AtomicWPSocialSync\Sync\ReconciliationService;
 use AtomicWPSocialSync\Sync\SyncResult;
 use AtomicWPSocialSync\Sync\SyncService;
@@ -424,22 +425,22 @@ try {
 	$method->setAccessible( true );
 	$test_id_one = '9990000000000000001';
 	$test_id_two = '9990000000000000002';
-	$post_one = (int) $method->invoke( $posts_page, null, $test_id_one, '2026-01-03T10:00' );
-	$post_two = (int) $method->invoke( $posts_page, null, $test_id_two, '2026-01-03T10:00' );
+	$post_one = (int) $method->invoke( $posts_page, null, $test_id_one, '2026-01-03T10:00', null );
+	$post_two = (int) $method->invoke( $posts_page, null, $test_id_two, '2026-01-03T10:00', null );
 	atomic_social_assert( $post_one > 0 && $post_two > 0 && $post_one !== $post_two, 'Creating two different Share IDs must succeed.' );
 	$created_post_ids[] = $post_one;
 	$created_post_ids[] = $post_two;
 	try {
-		$method->invoke( $posts_page, null, $test_id_one, '2026-01-03T10:00' );
+		$method->invoke( $posts_page, null, $test_id_one, '2026-01-03T10:00', null );
 		atomic_social_assert( false, 'Duplicate Share ID should be rejected.' );
 	} catch ( Throwable ) {
 	}
 	// Activity fallback duplicates.
-	$activity_post = (int) $method->invoke( $posts_page, null, 'https://www.linkedin.com/feed/update/urn:li:activity:9990000000000000003', '2026-01-03T10:00' );
+	$activity_post = (int) $method->invoke( $posts_page, null, 'https://www.linkedin.com/feed/update/urn:li:activity:9990000000000000003', '2026-01-03T10:00', null );
 	atomic_social_assert( $activity_post > 0, 'Creating an activity fallback post must succeed.' );
 	$created_post_ids[] = $activity_post;
 	try {
-		$method->invoke( $posts_page, null, 'https://www.linkedin.com/feed/update/urn:li:activity:9990000000000000003', '2026-01-03T10:00' );
+		$method->invoke( $posts_page, null, 'https://www.linkedin.com/feed/update/urn:li:activity:9990000000000000003', '2026-01-03T10:00', null );
 		atomic_social_assert( false, 'Duplicate activity URN should be rejected.' );
 	} catch ( Throwable ) {
 	}
@@ -499,7 +500,7 @@ try {
 	);
 	$checks[] = 'LinkedIn embed admin normalization (no raw HTML persistence)';
 
-	// LinkedIn embed-mode rendering + anchor + News Page CTA.
+	// LinkedIn embed-mode rendering + anchors + feed-level CTA.
 	$news_page_id = wp_insert_post(
 		array(
 			'post_type'   => 'page',
@@ -534,11 +535,26 @@ try {
 			'post_date'     => get_date_from_gmt( $published_gmt ),
 		)
 	);
-	atomic_social_assert( is_int( $embed_post_a ) && $embed_post_a > 0 && is_int( $embed_post_b ) && $embed_post_b > 0, 'Embed posts could not be created.' );
+	$embed_post_c = wp_insert_post(
+		array(
+			'post_type'     => SocialPostType::POST_TYPE,
+			'post_status'   => 'publish',
+			'post_title'    => 'LinkedIn Embed C',
+			'post_date_gmt' => $published_gmt,
+			'post_date'     => get_date_from_gmt( $published_gmt ),
+		)
+	);
+	atomic_social_assert(
+		is_int( $embed_post_a ) && $embed_post_a > 0
+		&& is_int( $embed_post_b ) && $embed_post_b > 0
+		&& is_int( $embed_post_c ) && $embed_post_c > 0,
+		'Embed posts could not be created.'
+	);
 	$created_post_ids[] = $embed_post_a;
 	$created_post_ids[] = $embed_post_b;
+	$created_post_ids[] = $embed_post_c;
 
-	foreach ( array( $embed_post_a, $embed_post_b ) as $pid ) {
+	foreach ( array( $embed_post_a, $embed_post_b, $embed_post_c ) as $pid ) {
 		update_post_meta( $pid, MetaKeys::PROVIDER, 'linkedin' );
 		update_post_meta( $pid, MetaKeys::INTEGRATION_MODE, IntegrationMode::EMBED );
 		update_post_meta( $pid, MetaKeys::REMOTE_PUBLISHED_AT, $published_iso );
@@ -549,8 +565,10 @@ try {
 	update_post_meta( $embed_post_a, MetaKeys::EMBED_HEIGHT_COMPACT, '603' );
 	update_post_meta( $embed_post_a, MetaKeys::EMBED_HEIGHT_FULL, '1370' );
 	update_post_meta( $embed_post_b, MetaKeys::EMBED_URN, 'urn:li:share:7500553868422897665' );
+	update_post_meta( $embed_post_c, MetaKeys::EMBED_URN, 'urn:li:share:7500553868422897666' );
 
-	$embed_attrs = $feed_renderer->attributes(
+	// CTA enabled + valid newsPageId => exactly one CTA linking to the page permalink (no post anchor).
+	$embed_attrs_with_cta = $feed_renderer->attributes(
 		array(
 			'providers'        => array( 'linkedin' ),
 			'postsPerPage'     => 10,
@@ -558,20 +576,55 @@ try {
 			'pagination'       => 'none',
 			'presentation'     => 'compact',
 			'showFullNewsCta'  => true,
-			'fullNewsCtaLabel' => 'View full news',
+			'fullNewsCtaLabel' => 'View all news',
+			'newsPageId'       => $news_page_id,
 		)
 	);
-	$embed_query = $feed_query->query( $embed_attrs );
+	$embed_query = $feed_query->query( $embed_attrs_with_cta );
 	$embed_ids = wp_list_pluck( $embed_query->posts, 'ID' );
-	atomic_social_assert( count( $embed_ids ) >= 2, 'Embed posts did not appear in the feed query.' );
+	atomic_social_assert( count( $embed_ids ) >= 3, 'Embed posts did not appear in the feed query.' );
 	atomic_social_assert( max( $embed_post_a, $embed_post_b ) === (int) $embed_ids[0], 'Deterministic ID tie-breaker for same-date posts is not applied.' );
 
-	$embed_html = $feed_renderer->render( $embed_query, $embed_attrs );
+	$embed_html = $feed_renderer->render( $embed_query, $embed_attrs_with_cta );
 	atomic_social_assert( str_contains( $embed_html, 'id="atomic-linkedin-post-' . $embed_post_a . '"' ), 'Embed card anchor id is missing.' );
 	atomic_social_assert( str_contains( $embed_html, 'https://www.linkedin.com/embed/feed/update/urn:li:share:7500553868422897664?collapsed=1' ), 'Compact LinkedIn embed URL was not generated.' );
-	atomic_social_assert( str_contains( $embed_html, '#atomic-linkedin-post-' . $embed_post_a ), 'News CTA anchor fragment is missing.' );
-	atomic_social_assert( str_contains( $embed_html, get_permalink( $news_page_id ) ), 'News CTA permalink was not used.' );
-	$checks[] = 'LinkedIn embed-mode rendering + anchor + News CTA';
+	atomic_social_assert( 1 === substr_count( $embed_html, 'class="atomic-linkedin-posts__cta"' ), 'CTA must be rendered exactly once per feed.' );
+	atomic_social_assert( 1 === substr_count( $embed_html, 'class="atomic-linkedin-posts__cta-link"' ), 'CTA link must be rendered exactly once per feed.' );
+	atomic_social_assert( str_contains( $embed_html, 'href="' . esc_url( get_permalink( $news_page_id ) ) . '"' ), 'CTA href must equal the selected page permalink.' );
+	atomic_social_assert( ! str_contains( $embed_html, '#atomic-linkedin-post-' ), 'CTA href must not include a post anchor fragment.' );
+	atomic_social_assert( str_contains( $embed_html, '>View all news<' ), 'Custom CTA label was not preserved.' );
+
+	// CTA disabled => zero CTA.
+	$embed_attrs_no_cta = $feed_renderer->attributes(
+		array(
+			'providers'       => array( 'linkedin' ),
+			'postsPerPage'    => 10,
+			'homepageOnly'    => true,
+			'pagination'      => 'none',
+			'presentation'    => 'compact',
+			'showFullNewsCta' => false,
+			'newsPageId'      => $news_page_id,
+		)
+	);
+	$embed_html_no_cta = $feed_renderer->render( $embed_query, $embed_attrs_no_cta );
+	atomic_social_assert( 0 === substr_count( $embed_html_no_cta, 'class="atomic-linkedin-posts__cta-link"' ), 'CTA disabled must render zero CTAs.' );
+
+	// CTA enabled + no target => zero frontend CTA.
+	$embed_attrs_missing_target = $feed_renderer->attributes(
+		array(
+			'providers'       => array( 'linkedin' ),
+			'postsPerPage'    => 10,
+			'homepageOnly'    => true,
+			'pagination'      => 'none',
+			'presentation'    => 'compact',
+			'showFullNewsCta' => true,
+			'newsPageId'      => 0,
+		)
+	);
+	$embed_html_missing_target = $feed_renderer->render( $embed_query, $embed_attrs_missing_target );
+	atomic_social_assert( 0 === substr_count( $embed_html_missing_target, 'class="atomic-linkedin-posts__cta-link"' ), 'CTA enabled with no target page must render zero frontend CTAs.' );
+
+	$checks[] = 'LinkedIn embed-mode rendering + anchors + feed-level CTA';
 
 	// Activity fallback rendering: compact must safely fall back to full (no collapsed=1 assumption).
 	$activity_embed = wp_insert_post(
@@ -604,6 +657,38 @@ try {
 	atomic_social_assert( str_contains( $activity_html, 'urn:li:activity:9990000000000000009' ), 'Activity URN was not rendered.' );
 	atomic_social_assert( ! str_contains( $activity_html, 'urn:li:activity:9990000000000000009?collapsed=1' ), 'Activity embeds must not assume collapsed=1 works.' );
 	$checks[] = 'LinkedIn activity fallback rendering (safe compact fallback)';
+
+	// Sources sanitize: stable IDs + URL normalization + single default.
+	$sources_in = array(
+		array( 'id' => 'fixed-id', 'label' => 'Example', 'url' => 'https://www.linkedin.com/company/example/posts', 'is_default' => true ),
+		array( 'id' => '', 'label' => 'Other', 'url' => 'https://linkedin.com/company/example', 'is_default' => true ), // second default must be dropped
+	);
+	$sources_out = PluginSettings::sanitizeLinkedInSources( $sources_in );
+	atomic_social_assert( 2 === count( $sources_out ), 'Sources sanitize should keep two valid sources.' );
+	atomic_social_assert( 'fixed-id' === (string) $sources_out[0]['id'] && true === (bool) $sources_out[0]['is_default'], 'First source should remain the default.' );
+	atomic_social_assert( true === str_starts_with( (string) $sources_out[0]['url'], 'https://www.linkedin.com/company/' ), 'Source URL was not normalized to https://www.linkedin.com.' );
+	atomic_social_assert( false === (bool) $sources_out[1]['is_default'], 'Second default must be cleared.' );
+	$checks[] = 'LinkedIn Sources sanitize (ids, URL normalization, single default)';
+
+	// HTML import parser: dedupe by `data-urn` and extract permalink.
+	$parser = new LinkedInHtmlImportParser();
+	$html = '<div data-urn="urn:li:activity:1234567890123456789"></div><div data-urn="urn:li:activity:1234567890123456789"></div><a href="https://www.linkedin.com/feed/update/urn:li:activity:1234567890123456789/?tracking=1">post</a>';
+	$items = $parser->parse( $html );
+	atomic_social_assert( 1 === count( $items ), 'HTML import parser must deduplicate identical activity URNs.' );
+	atomic_social_assert( 'urn:li:activity:1234567890123456789' === (string) $items[0]['urn'], 'HTML import parser did not extract expected URN.' );
+	atomic_social_assert( str_contains( (string) ( $items[0]['permalink'] ?? '' ), 'https://www.linkedin.com/feed/update/urn:li:activity:1234567890123456789/' ), 'HTML import parser did not extract the permalink.' );
+	$checks[] = 'LinkedIn HTML import parser (dedupe + permalink extraction)';
+
+	// Theme preset color storage: accept preset identity string without breaking legacy hex.
+	$sanitized = PluginSettings::sanitize(
+		array(
+			'design_border_color' => 'var(--wp--preset--color--primary)',
+			'pagination_color'    => '#dcdcde',
+		)
+	);
+	atomic_social_assert( 'var(--wp--preset--color--primary)' === (string) $sanitized['design_border_color'], 'Theme preset reference should be accepted.' );
+	atomic_social_assert( '#dcdcde' === (string) $sanitized['pagination_color'], 'Legacy hex color should remain accepted.' );
+	$checks[] = 'Theme preset color storage + legacy hex compatibility';
 
 	Plugin::deactivate();
 	atomic_social_assert( false === wp_next_scheduled( Scheduler::HOOK ), 'Deactivation did not clear the scheduler.' );

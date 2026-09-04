@@ -10,7 +10,9 @@ namespace AtomicWPSocialSync;
 use AtomicWPSocialSync\Admin\LinkedInEmbedMetaBox;
 use AtomicWPSocialSync\Admin\LinkedInPostsPage;
 use AtomicWPSocialSync\Admin\PostSyncMetaBox;
+use AtomicWPSocialSync\Admin\DesignSettingsPage;
 use AtomicWPSocialSync\Admin\SettingsPage;
+use AtomicWPSocialSync\Admin\LinkedInFeedSettingsPage;
 use AtomicWPSocialSync\Blocks\FeedBlock;
 use AtomicWPSocialSync\Connections\ConnectionRepository;
 use AtomicWPSocialSync\Display\FeedQuery;
@@ -91,6 +93,8 @@ final class Plugin {
 		$feed_block       = new FeedBlock( $feed_query, $feed_renderer );
 		$this->shortcode  = new Shortcode( $feed_query, $feed_renderer );
 		$settings_page    = new SettingsPage( $settings, $vault, $linkedin_oauth, $linkedin_client, $connections, $registry, $sync_service );
+		$design_settings  = new DesignSettingsPage( $settings );
+		$linkedin_settings = new LinkedInFeedSettingsPage( $settings, $design_settings );
 		$post_meta_box    = new PostSyncMetaBox( $connections, $reconciliation );
 		$linkedin_embed   = new LinkedInEmbedMetaBox();
 		$linkedin_posts   = new LinkedInPostsPage();
@@ -104,8 +108,15 @@ final class Plugin {
 		add_action( 'rest_api_init', array( $settings_page, 'registerRoutes' ) );
 
 		add_action( 'admin_menu', array( $linkedin_posts, 'registerMenu' ) );
+		add_action( 'admin_menu', array( $linkedin_settings, 'registerMenu' ) );
 		add_action( 'admin_menu', array( $settings_page, 'registerMenu' ) );
+		add_action( 'admin_menu', array( $design_settings, 'registerMenu' ) );
+		add_action( 'admin_enqueue_scripts', array( $linkedin_settings, 'enqueueAssets' ) );
+		add_action( 'admin_enqueue_scripts', array( $design_settings, 'enqueueAssets' ) );
 		add_action( 'admin_post_atomic_social_save_settings', array( $settings_page, 'saveSettings' ) );
+		add_action( 'admin_post_atomic_linkedin_save_sources', array( $linkedin_settings, 'saveSources' ) );
+		add_action( 'admin_post_atomic_linkedin_analyze_import', array( $linkedin_settings, 'analyzeImport' ) );
+		add_action( 'admin_post_atomic_linkedin_run_import', array( $linkedin_settings, 'runImport' ) );
 		add_action( 'admin_post_atomic_social_connect', array( $settings_page, 'connect' ) );
 		add_action( 'admin_post_atomic_social_select_organization', array( $settings_page, 'selectOrganization' ) );
 		add_action( 'admin_post_atomic_social_connection_action', array( $settings_page, 'connectionAction' ) );
@@ -126,11 +137,20 @@ final class Plugin {
 	}
 
 	public function registerAssets(): void {
+		$frontend_css_path = ATOMIC_WP_SOCIAL_SYNC_PATH . 'assets/css/frontend.css';
+		$frontend_css_ver  = file_exists( $frontend_css_path ) ? (string) filemtime( $frontend_css_path ) : ATOMIC_WP_SOCIAL_SYNC_VERSION;
 		wp_register_style(
 			'atomic-wp-social-sync-frontend',
 			ATOMIC_WP_SOCIAL_SYNC_URL . 'assets/css/frontend.css',
 			array(),
-			ATOMIC_WP_SOCIAL_SYNC_VERSION
+			$frontend_css_ver
+		);
+		wp_register_script(
+			'atomic-wp-social-sync-carousel',
+			ATOMIC_WP_SOCIAL_SYNC_URL . 'assets/js/carousel.js',
+			array(),
+			ATOMIC_WP_SOCIAL_SYNC_VERSION,
+			true
 		);
 		wp_register_script(
 			'atomic-wp-social-sync-load-more',
@@ -183,7 +203,6 @@ final class Plugin {
 				'providers'          => $providers,
 				'connections'        => $connections,
 				'singlePagesEnabled' => (bool) $this->settings->get( 'enable_single_pages', false ),
-				'newsPageId'         => (int) $this->settings->get( 'news_page_id', 0 ),
 				'pages'              => $pages,
 			)
 		);

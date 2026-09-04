@@ -32,7 +32,10 @@ final class LinkedInEmbed {
 	public const STRATEGY_ACTIVITY_FALLBACK = 'activity_fallback';
 
 	public const DEFAULT_HEIGHT_COMPACT = 650;
-	public const DEFAULT_HEIGHT_FULL    = 1350;
+	// Full embed heights vary widely and are not reliably measurable cross-origin.
+	// We only use a large height when an official iframe provided it; otherwise we default to compact-like sizing.
+	public const DEFAULT_HEIGHT_FULL    = 900;
+	public const DEFAULT_HEIGHT_ACTIVITY = 720;
 
 	public const MIN_HEIGHT = 200;
 	public const MAX_HEIGHT = 3000;

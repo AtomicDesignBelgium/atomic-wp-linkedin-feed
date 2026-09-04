@@ -102,12 +102,12 @@ LinkedIn iframes are cross-origin and the plugin cannot reliably measure their d
 
 V1 does not expose height override fields in the dedicated LinkedIn Posts UI. Heights are extracted from pasted iframes when available, otherwise centralized fallbacks are used.
 
-## “View full news” CTA
+## “View all news” CTA
 
-The feed block can optionally render a “View full news” CTA per item. When enabled and a target WordPress Page is selected:
+The feed block can optionally render a single feed-level CTA (“View all news”) after the feed. When enabled and a target WordPress Page is selected:
 
-- each item has a stable anchor: `atomic-linkedin-post-{post_id}`
-- the CTA links to: `{target_page_permalink}#atomic-linkedin-post-{post_id}`
+- the CTA links to: `{target_page_permalink}` (no post anchor is appended)
+- each item still has a stable anchor id: `atomic-linkedin-post-{post_id}` (useful for explicit deep links, but not used by the CTA)
 
 The iframe itself is never wrapped in another link.
 

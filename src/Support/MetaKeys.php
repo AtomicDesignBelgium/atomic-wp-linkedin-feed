@@ -46,6 +46,10 @@ final class MetaKeys {
 	public const EMBED_URN              = '_atomic_social_embed_urn';
 	public const EMBED_HEIGHT_COMPACT   = '_atomic_social_embed_height_compact';
 	public const EMBED_HEIGHT_FULL      = '_atomic_social_embed_height_full';
+	// Optional override for compatibility embeds (activity_fallback).
+	public const EMBED_HEIGHT_OVERRIDE  = '_atomic_social_embed_height_override';
+	// Optional admin metadata (not required for rendering).
+	public const LINKEDIN_SOURCE_ID     = '_atomic_social_linkedin_source_id';
 
 	private function __construct() {}
 }

@@ -8,6 +8,39 @@
 	--atomic-social-text-size: 1rem;
 	--atomic-social-meta-size: 0.8125rem;
 	--atomic-social-cta-size: 0.9375rem;
+	--atomic-linkedin-min-width: 340px;
+	--atomic-linkedin-separator-thickness: 1px;
+	--atomic-linkedin-separator-color: #dcdcde;
+	--atomic-linkedin-separator-spacing: 40px;
+	--atomic-linkedin-native-width: 504px;
+	--atomic-social-card-border-style: solid;
+	--atomic-social-card-border-width: 1px;
+	--atomic-social-card-border-color: color-mix(in srgb, currentColor 20%, transparent);
+	--atomic-social-card-shadow: none;
+	--atomic-social-card-hover-translate: 0px;
+	--atomic-social-card-hover-scale: 1;
+	--atomic-social-transition: 200ms;
+
+	--atomic-linkedin-pagination-font-size: inherit;
+	--atomic-linkedin-pagination-font-weight: inherit;
+	--atomic-linkedin-pagination-min-width: 2.75rem;
+	--atomic-linkedin-pagination-padding-x: 0.85rem;
+	--atomic-linkedin-pagination-padding-y: 0.5rem;
+	--atomic-linkedin-pagination-gap: 0.5rem;
+	--atomic-linkedin-pagination-radius: 0.35rem;
+	--atomic-linkedin-pagination-border-style: solid;
+	--atomic-linkedin-pagination-border-width: 1px;
+	--atomic-linkedin-pagination-border-color: currentColor;
+	--atomic-linkedin-pagination-color: currentColor;
+	--atomic-linkedin-pagination-background: transparent;
+	--atomic-linkedin-pagination-active-color: currentColor;
+	--atomic-linkedin-pagination-active-background: color-mix(in srgb, currentColor 12%, transparent);
+	--atomic-linkedin-pagination-active-border-color: currentColor;
+	--atomic-linkedin-pagination-hover-color: currentColor;
+	--atomic-linkedin-pagination-hover-background: color-mix(in srgb, currentColor 8%, transparent);
+	--atomic-linkedin-pagination-hover-border-color: currentColor;
+	--atomic-linkedin-pagination-shadow: none;
+	--atomic-linkedin-pagination-transition: 200ms;
 	color: inherit;
 }
 
@@ -17,15 +50,95 @@
 	gap: var(--atomic-social-gap);
 }
 
+/* Layout: Grid (responsive auto-fit) */
+.atomic-social-feed--layout-grid .atomic-social-feed__grid {
+	grid-template-columns: repeat(auto-fit, minmax(min(var(--atomic-linkedin-min-width), 100%), 1fr));
+}
+
+/* Layout: Carousel (scroll-snap, lightweight) */
+.atomic-social-feed--layout-carousel { overflow: hidden; }
+.atomic-social-feed--layout-carousel .atomic-social-feed__carousel-controls {
+	display: flex;
+	justify-content: flex-end;
+	gap: 0.5rem;
+	margin-bottom: 0.75rem;
+}
+.atomic-social-feed--layout-carousel .atomic-social-feed__carousel-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0.5rem 0.85rem;
+	border: 1px solid currentColor;
+	border-radius: 0.35rem;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	cursor: pointer;
+}
+.atomic-social-feed--layout-carousel .atomic-social-feed__carousel-button[disabled] {
+	opacity: 0.5;
+	cursor: default;
+}
+.atomic-social-feed--layout-carousel .atomic-social-feed__grid {
+	display: flex;
+	overflow-x: auto;
+	overflow-y: hidden;
+	gap: var(--atomic-social-gap);
+	scroll-snap-type: x mandatory;
+	scroll-padding: var(--atomic-social-gap);
+	overscroll-behavior-x: contain;
+	-webkit-overflow-scrolling: touch;
+	padding-bottom: 0.25rem;
+}
+.atomic-social-feed--layout-carousel .atomic-social-card {
+	flex: 0 0 min(var(--atomic-linkedin-min-width), 100%);
+	scroll-snap-align: start;
+}
+
+/* Layout: Stacked (one per row) */
+.atomic-social-feed--layout-stacked .atomic-social-feed__grid {
+	display: flex;
+	flex-direction: column;
+	gap: var(--atomic-social-gap);
+}
+.atomic-social-feed--layout-stacked .atomic-social-card {
+	height: auto;
+	min-height: 0;
+}
+.atomic-social-feed--layout-stacked.atomic-social-feed--stacked-native .atomic-social-card {
+	max-width: min(100%, var(--atomic-linkedin-native-width));
+	margin-left: auto;
+	margin-right: auto;
+}
+.atomic-social-feed--layout-stacked.atomic-social-feed--stacked-full .atomic-social-card {
+	width: 100%;
+}
+.atomic-social-feed--layout-stacked.atomic-social-feed--stacked-separator .atomic-social-feed__grid {
+	gap: 0;
+}
+.atomic-social-feed--layout-stacked.atomic-social-feed--stacked-separator .atomic-social-card + .atomic-social-card {
+	border-top: var(--atomic-linkedin-separator-thickness) solid var(--atomic-linkedin-separator-color);
+	padding-top: var(--atomic-linkedin-separator-spacing);
+}
+
 .atomic-social-card {
 	display: flex;
 	min-width: 0;
 	flex-direction: column;
 	overflow: hidden;
-	border: var(--atomic-social-card-border);
-	border-color: color-mix(in srgb, currentColor 20%, transparent);
+	border-style: var(--atomic-social-card-border-style);
+	border-width: var(--atomic-social-card-border-width);
+	border-color: var(--atomic-social-card-border-color, color-mix(in srgb, currentColor 20%, transparent));
 	border-radius: var(--atomic-social-card-radius);
 	background: var(--atomic-social-card-background);
+	box-shadow: var(--atomic-social-card-shadow);
+	transition: transform var(--atomic-social-transition) ease, box-shadow var(--atomic-social-transition) ease;
+}
+.atomic-social-card:hover { transform: translateY(var(--atomic-social-card-hover-translate)) scale(var(--atomic-social-card-hover-scale, 1)); }
+
+@media (prefers-reduced-motion: reduce) {
+	.atomic-social-card { transition: none !important; }
+	.atomic-social-card:hover { transform: none !important; }
 }
 
 .atomic-social-card__media { overflow: hidden; }
@@ -90,20 +203,23 @@
 }
 
 .atomic-social-pagination { margin-top: var(--atomic-social-gap); text-align: center; }
-.atomic-social-pagination ul { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; padding: 0; list-style: none; }
+.atomic-social-pagination ul { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--atomic-linkedin-pagination-gap); padding: 0; list-style: none; }
 .atomic-social-pagination a,
 .atomic-social-pagination .current,
-.atomic-social-pagination__button { display: inline-flex; min-width: 2.75rem; min-height: 2.75rem; align-items: center; justify-content: center; padding: 0.5rem 0.85rem; border: 1px solid currentColor; border-radius: 0.35rem; background: transparent; color: inherit; font: inherit; cursor: pointer; }
-.atomic-social-pagination .current { background: color-mix(in srgb, currentColor 12%, transparent); }
+.atomic-social-pagination__button { display: inline-flex; min-width: var(--atomic-linkedin-pagination-min-width); min-height: var(--atomic-linkedin-pagination-min-width); align-items: center; justify-content: center; padding: var(--atomic-linkedin-pagination-padding-y) var(--atomic-linkedin-pagination-padding-x); border-style: var(--atomic-linkedin-pagination-border-style); border-width: var(--atomic-linkedin-pagination-border-width); border-color: var(--atomic-linkedin-pagination-border-color); border-radius: var(--atomic-linkedin-pagination-radius); background: var(--atomic-linkedin-pagination-background); color: var(--atomic-linkedin-pagination-color); font: inherit; font-size: var(--atomic-linkedin-pagination-font-size); font-weight: var(--atomic-linkedin-pagination-font-weight); cursor: pointer; box-shadow: var(--atomic-linkedin-pagination-shadow); transition: background var(--atomic-linkedin-pagination-transition) ease, color var(--atomic-linkedin-pagination-transition) ease, border-color var(--atomic-linkedin-pagination-transition) ease; }
+.atomic-social-pagination .current { background: var(--atomic-linkedin-pagination-active-background); color: var(--atomic-linkedin-pagination-active-color); border-color: var(--atomic-linkedin-pagination-active-border-color); }
+.atomic-social-pagination a:hover,
+.atomic-social-pagination__button:hover { background: var(--atomic-linkedin-pagination-hover-background); color: var(--atomic-linkedin-pagination-hover-color); border-color: var(--atomic-linkedin-pagination-hover-border-color); }
 .atomic-social-pagination__button[disabled] { cursor: wait; opacity: 0.6; }
 .atomic-social-card a:focus-visible,
 .atomic-social-pagination a:focus-visible,
-.atomic-social-pagination__button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
+.atomic-social-pagination__button:focus-visible,
+.atomic-social-feed__carousel-button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
 
 @media (max-width: 960px) {
-	.atomic-social-feed__grid { grid-template-columns: repeat(var(--atomic-social-columns-tablet, 2), minmax(0, 1fr)); }
+	.atomic-social-feed:not(.atomic-social-feed--layout-grid) .atomic-social-feed__grid { grid-template-columns: repeat(var(--atomic-social-columns-tablet, 2), minmax(0, 1fr)); }
 }
 
 @media (max-width: 600px) {
-	.atomic-social-feed__grid { grid-template-columns: repeat(var(--atomic-social-columns-mobile, 1), minmax(0, 1fr)); }
+	.atomic-social-feed:not(.atomic-social-feed--layout-grid) .atomic-social-feed__grid { grid-template-columns: repeat(var(--atomic-social-columns-mobile, 1), minmax(0, 1fr)); }
 }

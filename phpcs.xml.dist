@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <ruleset name="Atomic WP Social Sync">
 	<description>WordPress coding standards for Atomic WP Social Sync.</description>
-	<file>atomic-wp-social-sync.php</file>
+	<file>atomic-wp-linkedin-feed.php</file>
 	<file>src</file>
 	<file>uninstall.php</file>
 	<exclude-pattern>vendor/*</exclude-pattern>

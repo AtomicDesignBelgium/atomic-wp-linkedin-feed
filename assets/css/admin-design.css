@@ -1,0 +1,395 @@
+/* Atomic LinkedIn Feed — Design settings (admin-only).
+ *
+ * Hard rule: everything is scoped under `.atomic-linkedin-admin`.
+ */
+@media screen {
+	.atomic-linkedin-admin.atomic-linkedin-design {
+		--atomic-design-surface: #fff;
+		--atomic-design-border: #dcdcde;
+		--atomic-design-muted: #646970;
+		--atomic-design-soft-bg: #f6f7f7;
+		--atomic-design-radius: 10px;
+		--atomic-design-section-pad: 22px;
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-design__intro {
+		max-width: 72ch;
+		color: var(--atomic-design-muted);
+		margin-top: 0.5rem;
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-design__layout {
+		max-width: 1480px;
+		display: grid;
+		grid-template-columns: minmax(480px, 680px) minmax(360px, 1fr);
+		gap: 32px;
+		align-items: start;
+		margin-top: 18px;
+	}
+
+	@media (max-width: 1100px) {
+		.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-design__layout {
+			grid-template-columns: 1fr;
+		}
+	}
+
+	/* Settings: sections (cards) */
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-design__section {
+		background: var(--atomic-design-surface);
+		border: 1px solid var(--atomic-design-border);
+		border-radius: var(--atomic-design-radius);
+		padding: var(--atomic-design-section-pad);
+		margin: 0 0 28px;
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-design__section-header {
+		margin-bottom: 18px;
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-design__section-title {
+		margin: 0 0 6px;
+		font-size: 1.05rem; /* 16–18px feel in WP admin */
+		font-weight: 650;
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-design__section-description {
+		margin: 0;
+		color: var(--atomic-design-muted);
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-design__subheading {
+		margin: 18px 0 10px;
+		font-size: 0.9rem;
+		font-weight: 650;
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-design__fields {
+		display: flex;
+		flex-direction: column;
+		gap: 14px;
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-design__field {
+		display: grid;
+		grid-template-columns: 260px minmax(0, 1fr);
+		gap: 16px;
+		align-items: start;
+	}
+
+	@media (max-width: 782px) {
+		.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-design__field {
+			grid-template-columns: 1fr;
+			gap: 8px;
+		}
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-design__field-label label {
+		font-weight: 600;
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-design__field-help {
+		margin: 6px 0 0;
+		color: var(--atomic-design-muted);
+		font-size: 12.5px;
+		line-height: 1.45;
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-design__field-control .description {
+		margin-left: 6px;
+		color: var(--atomic-design-muted);
+	}
+
+	/* Keep controls compact */
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-design__field-control .small-text {
+		width: 92px;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-design__field-control select {
+		min-width: 180px;
+		max-width: 260px;
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-design__inline {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+		gap: 12px;
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-design__mini-label {
+		display: block;
+		font-weight: 600;
+		font-size: 12px;
+		color: var(--atomic-design-muted);
+		margin: 0 0 4px;
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-design__actions {
+		margin-top: 10px;
+	}
+
+	/* Preview: sticky column */
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-design__preview-sticky {
+		position: sticky;
+		top: 32px;
+		max-height: calc(100vh - 140px);
+		overflow: auto;
+		padding-right: 6px; /* avoid scrollbar overlaying shadows */
+	}
+
+	body.admin-bar .atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-design__preview-sticky {
+		top: 64px;
+	}
+
+	@media (max-width: 1100px) {
+		.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-design__preview-sticky {
+			position: static;
+			max-height: none;
+			overflow: visible;
+			padding-right: 0;
+		}
+	}
+
+	/* Live preview panel */
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-preview {
+		background: var(--atomic-design-surface);
+		border: 1px solid var(--atomic-design-border);
+		border-radius: var(--atomic-design-radius);
+		padding: 18px;
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-preview__header {
+		margin-bottom: 14px;
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-preview__title {
+		margin: 0 0 6px;
+		font-size: 1rem;
+		font-weight: 650;
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-preview__description {
+		margin: 0 0 8px;
+		color: var(--atomic-design-muted);
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-preview__note {
+		margin: 6px 0 0;
+		color: var(--atomic-design-muted);
+		font-size: 12.5px;
+		line-height: 1.45;
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-preview__group {
+		margin-top: 16px;
+		padding-top: 16px;
+		border-top: 1px solid color-mix(in srgb, var(--atomic-design-border) 70%, transparent);
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-preview__group-title {
+		margin: 0 0 10px;
+		font-size: 0.9rem;
+		font-weight: 650;
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-preview__canvas {
+		background: var(--atomic-design-soft-bg);
+		border: 1px solid color-mix(in srgb, var(--atomic-design-border) 75%, transparent);
+		border-radius: 10px;
+		padding: 14px;
+	}
+
+	/* Card preview */
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-preview__card-header {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		margin-bottom: 10px;
+		gap: 10px;
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-preview__muted {
+		color: var(--atomic-design-muted);
+		font-size: 12.5px;
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-preview__embed-placeholder {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		height: 120px;
+		border-radius: 10px;
+		background:
+			linear-gradient(135deg, rgba(0, 0, 0, 0.03), rgba(0, 0, 0, 0.01)),
+			repeating-linear-gradient(
+				-45deg,
+				rgba(0, 0, 0, 0.02),
+				rgba(0, 0, 0, 0.02) 10px,
+				rgba(0, 0, 0, 0.00) 10px,
+				rgba(0, 0, 0, 0.00) 20px
+			);
+		border: 1px dashed color-mix(in srgb, var(--atomic-design-border) 80%, transparent);
+		color: var(--atomic-design-muted);
+		font-weight: 600;
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-preview__embed-placeholder--small {
+		height: 64px;
+		font-size: 13px;
+	}
+
+	/* Stacked demo */
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-preview__stacked-demo-inner {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-preview__stacked-demo-inner.is-separator-off {
+		gap: var(--atomic-social-gap);
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-preview__stacked-demo-inner:not(.is-separator-off) {
+		gap: 0;
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-preview__separator {
+		border-top: var(--atomic-linkedin-separator-thickness) solid var(--atomic-linkedin-separator-color);
+		margin: var(--atomic-linkedin-separator-spacing) 0;
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-preview__stacked-demo-inner.is-separator-off .atomic-linkedin-preview__separator {
+		display: none;
+	}
+
+	/* Pagination preview: keep links legible as "buttons" */
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-preview__pagination-demo a,
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-preview__pagination-demo .current {
+		text-decoration: none;
+	}
+
+	/* Compact theme color control + popover (preserves existing JS behavior) */
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-color-control.atomic-color-control {
+		position: relative;
+		width: 100%;
+		max-width: 420px;
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-color-control__trigger.atomic-color-control__toggle {
+		width: 100%;
+		display: grid;
+		grid-template-columns: 16px 1fr auto;
+		gap: 10px;
+		align-items: center;
+		padding: 8px 10px;
+		border: 1px solid var(--atomic-design-border);
+		border-radius: 8px;
+		background: #fff;
+		cursor: pointer;
+		text-align: left;
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-color-control__trigger.atomic-color-control__toggle:focus-visible {
+		outline: 2px solid #2271b1;
+		outline-offset: 2px;
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-color-control__swatch.atomic-color-control__toggle-chip {
+		width: 16px;
+		height: 16px;
+		border-radius: 999px;
+		border: 1px solid rgba(0,0,0,0.12);
+		background: transparent;
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-color-control__label.atomic-color-control__toggle-label {
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-color-control__popover.atomic-color-control__popover {
+		position: absolute;
+		z-index: 9999;
+		top: calc(100% + 6px);
+		left: 0;
+		right: 0;
+		padding: 12px;
+		border: 1px solid var(--atomic-design-border);
+		border-radius: 10px;
+		background: #fff;
+		box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-color-control__section + .atomic-color-control__section {
+		margin-top: 12px;
+		padding-top: 12px;
+		border-top: 1px solid color-mix(in srgb, var(--atomic-design-border) 70%, transparent);
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-color-control__section-title {
+		font-size: 12px;
+		font-weight: 700;
+		color: var(--atomic-design-muted);
+		margin-bottom: 8px;
+		text-transform: uppercase;
+		letter-spacing: 0.02em;
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-color-control__swatches {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+		gap: 8px;
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-color-control__swatch,
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-color-control__option {
+		display: inline-flex;
+		align-items: center;
+		gap: 10px;
+		padding: 8px 10px;
+		border: 1px solid var(--atomic-design-border);
+		border-radius: 8px;
+		background: #fff;
+		cursor: pointer;
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-color-control__option {
+		width: 100%;
+		text-align: left;
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-color-control__swatch:focus-visible,
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-color-control__option:focus-visible {
+		outline: 2px solid #2271b1;
+		outline-offset: 2px;
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-color-control__swatch.is-selected,
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-color-control__option.is-selected {
+		border-color: #2271b1;
+		box-shadow: 0 0 0 2px rgba(34, 113, 177, 0.2);
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-color-control__swatch-chip {
+		width: 16px;
+		height: 16px;
+		border-radius: 999px;
+		border: 1px solid rgba(0,0,0,0.12);
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-color-control__swatch-name {
+		font-size: 13px;
+		color: #1d2327;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-color-control__custom {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.atomic-linkedin-admin.atomic-linkedin-design .atomic-linkedin-color-control__hex.atomic-color-control__hex {
+		max-width: 180px;
+	}
+}

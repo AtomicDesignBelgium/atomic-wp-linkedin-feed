@@ -28,9 +28,9 @@ In addition to API import, the plugin supports manually curated **official Linke
 
 == Installation ==
 
-1. Upload the `atomic-wp-social-sync` directory to `/wp-content/plugins/`.
+1. Upload the `atomic-wp-linkedin-feed` directory to `/wp-content/plugins/`.
 2. Activate the plugin.
-3. Open Settings → Atomic WP Social Sync.
+3. Open Settings → Atomic LinkedIn Feed.
 4. Complete the LinkedIn Developer App and OAuth configuration below.
 
 == Configuration ==
@@ -81,7 +81,7 @@ LinkedIn is used for OAuth, Page discovery, post retrieval, direct post verifica
 1. Settings and LinkedIn application configuration (placeholder).
 2. Connection list and synchronization diagnostics (placeholder).
 3. Social Sync post editor controls (placeholder).
-4. Atomic Social Feed block controls (placeholder).
+4. Atomic LinkedIn Posts block controls (placeholder).
 5. Responsive frontend feed (placeholder).
 
 == Changelog ==

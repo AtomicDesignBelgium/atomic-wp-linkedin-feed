@@ -223,6 +223,22 @@ final class LinkedInPostsPage {
 
 				<div id="atomic-linkedin-result" style="margin-top:10px;"></div>
 
+				<details id="atomic-linkedin-advanced" style="margin-top:12px;">
+					<summary><strong><?php esc_html_e( 'Advanced', 'atomic-wp-social-sync' ); ?></strong></summary>
+					<div style="margin-top:10px;">
+						<p style="margin-top:0;">
+							<label for="atomic-linkedin-compat-height-mode"><strong><?php esc_html_e( 'Embed height', 'atomic-wp-social-sync' ); ?></strong></label>
+							<span class="description" style="display:block;"><?php esc_html_e( 'For Compatibility embeds only (activity fallback).', 'atomic-wp-social-sync' ); ?></span>
+							<select id="atomic-linkedin-compat-height-mode" class="regular-text">
+								<option value="default"><?php esc_html_e( 'Default', 'atomic-wp-social-sync' ); ?></option>
+								<option value="custom"><?php esc_html_e( 'Custom height', 'atomic-wp-social-sync' ); ?></option>
+							</select>
+							<input type="number" id="atomic-linkedin-compat-height" class="small-text" min="<?php echo esc_attr( (string) LinkedInEmbed::MIN_HEIGHT ); ?>" max="<?php echo esc_attr( (string) LinkedInEmbed::MAX_HEIGHT ); ?>" step="10" value="" style="margin-left:8px;">
+							<span class="description"><?php esc_html_e( 'px', 'atomic-wp-social-sync' ); ?></span>
+						</p>
+					</div>
+				</details>
+
 				<p style="margin-top:16px;">
 					<button type="submit" class="button button-primary" id="atomic-linkedin-save"><?php esc_html_e( 'Add post', 'atomic-wp-social-sync' ); ?></button>
 					<button type="button" class="button" id="atomic-linkedin-preview"><?php esc_html_e( 'Preview', 'atomic-wp-social-sync' ); ?></button>
@@ -242,7 +258,8 @@ final class LinkedInPostsPage {
 		try {
 			$input          = trim( (string) wp_unslash( $_POST['embed_input'] ?? '' ) );
 			$published_local = trim( (string) wp_unslash( $_POST['published_at'] ?? '' ) );
-			$post_id        = $this->createOrUpdateEmbedPost( null, $input, $published_local );
+			$override       = $this->readCompatibilityHeightOverride();
+			$post_id        = $this->createOrUpdateEmbedPost( null, $input, $published_local, $override );
 			wp_send_json_success(
 				array(
 					'post_id' => $post_id,
@@ -263,7 +280,8 @@ final class LinkedInPostsPage {
 			if ( $post_id <= 0 ) {
 				throw new RuntimeException( __( 'Invalid post ID.', 'atomic-wp-social-sync' ) );
 			}
-			$this->createOrUpdateEmbedPost( $post_id, $input, $published_local );
+			$override = $this->readCompatibilityHeightOverride();
+			$this->createOrUpdateEmbedPost( $post_id, $input, $published_local, $override );
 			wp_send_json_success(
 				array(
 					'post_id' => $post_id,
@@ -286,6 +304,9 @@ final class LinkedInPostsPage {
 			wp_send_json_error( array( 'message' => __( 'Post was not found.', 'atomic-wp-social-sync' ) ), 404 );
 		}
 		$urn = (string) get_post_meta( $post_id, MetaKeys::EMBED_URN, true );
+		$strategy = (string) get_post_meta( $post_id, MetaKeys::EMBED_STRATEGY, true );
+		$strategy = '' !== $strategy ? $strategy : LinkedInEmbed::STRATEGY_OFFICIAL;
+		$height_override = (int) get_post_meta( $post_id, MetaKeys::EMBED_HEIGHT_OVERRIDE, true );
 		$published = (string) get_post_meta( $post_id, MetaKeys::REMOTE_PUBLISHED_AT, true );
 		$published_local = '';
 		if ( '' !== $published ) {
@@ -297,15 +318,25 @@ final class LinkedInPostsPage {
 				$published_local = '';
 			}
 		}
-		$preview_src = LinkedInEmbed::embedUrl( $urn, 'compact' );
-		$height = (int) get_post_meta( $post_id, MetaKeys::EMBED_HEIGHT_COMPACT, true );
-		if ( $height < LinkedInEmbed::MIN_HEIGHT || $height > LinkedInEmbed::MAX_HEIGHT ) {
-			$height = LinkedInEmbed::DEFAULT_HEIGHT_COMPACT;
+		$preview_presentation = LinkedInEmbed::STRATEGY_ACTIVITY_FALLBACK === $strategy ? 'full' : 'compact';
+		$preview_src = LinkedInEmbed::embedUrl( $urn, $preview_presentation, $strategy );
+		if ( LinkedInEmbed::STRATEGY_ACTIVITY_FALLBACK === $strategy ) {
+			$height = $height_override;
+			if ( $height < LinkedInEmbed::MIN_HEIGHT || $height > LinkedInEmbed::MAX_HEIGHT ) {
+				$height = LinkedInEmbed::DEFAULT_HEIGHT_ACTIVITY;
+			}
+		} else {
+			$height = (int) get_post_meta( $post_id, MetaKeys::EMBED_HEIGHT_COMPACT, true );
+			if ( $height < LinkedInEmbed::MIN_HEIGHT || $height > LinkedInEmbed::MAX_HEIGHT ) {
+				$height = LinkedInEmbed::DEFAULT_HEIGHT_COMPACT;
+			}
 		}
 		wp_send_json_success(
 			array(
 				'post_id'        => $post_id,
 				'urn'            => $urn,
+				'strategy'       => $strategy,
+				'height_override' => $height_override,
 				'published_local' => $published_local,
 				'preview_src'    => $preview_src,
 				'preview_height' => $height,
@@ -376,7 +407,7 @@ final class LinkedInPostsPage {
 		return IntegrationMode::EMBED === $mode && 'linkedin' === $provider;
 	}
 
-	private function createOrUpdateEmbedPost( ?int $post_id, string $input, string $published_local ): int {
+	private function createOrUpdateEmbedPost( ?int $post_id, string $input, string $published_local, ?int $compat_height_override ): int {
 		$parsed = LinkedInEmbed::parseInput( $input );
 		$strategy = (string) ( $parsed['strategy'] ?? LinkedInEmbed::STRATEGY_OFFICIAL );
 		$urn    = $parsed['urn'];
@@ -447,6 +478,20 @@ final class LinkedInPostsPage {
 		update_post_meta( $post_id, MetaKeys::DETACHED, '1' );
 		update_post_meta( $post_id, MetaKeys::REMOTE_STATUS, 'embedded' );
 
+		// Optional compatibility height override (activity fallback only).
+		if ( LinkedInEmbed::STRATEGY_ACTIVITY_FALLBACK === $strategy ) {
+			if ( null !== $compat_height_override ) {
+				if ( $compat_height_override < LinkedInEmbed::MIN_HEIGHT || $compat_height_override > LinkedInEmbed::MAX_HEIGHT ) {
+					throw new RuntimeException( __( 'Compatibility embed height is out of allowed bounds.', 'atomic-wp-social-sync' ) );
+				}
+				update_post_meta( $post_id, MetaKeys::EMBED_HEIGHT_OVERRIDE, (string) $compat_height_override );
+			} else {
+				delete_post_meta( $post_id, MetaKeys::EMBED_HEIGHT_OVERRIDE );
+			}
+		} else {
+			delete_post_meta( $post_id, MetaKeys::EMBED_HEIGHT_OVERRIDE );
+		}
+
 		// Ensure embed-mode records are editorially managed and never targeted by the import sync engine.
 		delete_post_meta( $post_id, MetaKeys::CONNECTION_ID );
 		delete_post_meta( $post_id, MetaKeys::CONTENT_HASH );
@@ -471,6 +516,15 @@ final class LinkedInPostsPage {
 
 		wp_set_object_terms( $post_id, 'linkedin', SocialPostType::PROVIDER_TAXONOMY );
 		return (int) $post_id;
+	}
+
+	private function readCompatibilityHeightOverride(): ?int {
+		$mode = sanitize_key( (string) wp_unslash( $_POST['compat_height_mode'] ?? 'default' ) );
+		if ( 'custom' !== $mode ) {
+			return null;
+		}
+		$value = absint( wp_unslash( $_POST['compat_height'] ?? 0 ) );
+		return $value > 0 ? $value : null;
 	}
 
 	private function findExistingEmbedPostIdByStrategyUrn( string $strategy, string $urn, ?int $exclude_post_id ): ?int {

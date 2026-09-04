@@ -17,6 +17,9 @@
 	var saveBtn = qs( '#atomic-linkedin-save' );
 	var addBtn = qs( '#atomic-linkedin-feed-add' );
 	var previewBtn = qs( '#atomic-linkedin-preview' );
+	var advanced = qs( '#atomic-linkedin-advanced' );
+	var compatMode = qs( '#atomic-linkedin-compat-height-mode' );
+	var compatHeight = qs( '#atomic-linkedin-compat-height' );
 
 	var i18n = cfg.i18n || {};
 
@@ -120,6 +123,26 @@
 		);
 	}
 
+	function syncCompatHeightUi( parsed, existingOverride ) {
+		var isCompat = parsed && parsed.strategy === 'activity_fallback';
+		if ( compatMode ) { compatMode.disabled = ! isCompat; }
+		if ( ! isCompat ) {
+			if ( compatMode ) { compatMode.value = 'default'; }
+			if ( compatHeight ) { compatHeight.value = ''; }
+			if ( compatHeight ) { compatHeight.disabled = true; }
+			if ( advanced ) { advanced.open = false; }
+			return;
+		}
+		if ( typeof existingOverride === 'number' && existingOverride > 0 ) {
+			if ( compatMode ) { compatMode.value = 'custom'; }
+			if ( compatHeight ) { compatHeight.value = String( existingOverride ); }
+		} else {
+			if ( compatMode ) { compatMode.value = 'default'; }
+			if ( compatHeight ) { compatHeight.value = ''; }
+		}
+		if ( compatHeight ) { compatHeight.disabled = ! ( compatMode && compatMode.value === 'custom' ); }
+	}
+
 	function showError( message ) {
 		setHtml( result, '<div class="notice notice-error inline"><p>' + escapeHtml( message || 'Error' ) + '</p></div>' );
 	}
@@ -137,6 +160,7 @@
 			saveBtn.textContent = ( mode === 'edit' ) ? ( i18n.saveChanges || 'Save changes' ) : ( i18n.addPost || 'Add post' );
 		}
 		renderDetection( null );
+		syncCompatHeightUi( null, 0 );
 	}
 
 	function ajax( action, data ) {
@@ -177,7 +201,9 @@
 			ajax( 'atomic_linkedin_get_post', { post_id: id } ).then( function ( data ) {
 				if ( embedField ) { embedField.value = data.urn || ''; }
 				if ( publishedField ) { publishedField.value = data.published_local || ''; }
-				renderDetection( parseLinkedInInput( data.urn || '' ) );
+				var parsed = parseLinkedInInput( data.urn || '' );
+				renderDetection( parsed );
+				syncCompatHeightUi( parsed, parseInt( data.height_override || 0, 10 ) || 0 );
 			} ).catch( function ( err ) {
 				showError( err && err.message ? err.message : 'Error' );
 			} );
@@ -207,7 +233,21 @@
 	// Live detection while typing/pasting.
 	if ( embedField ) {
 		embedField.addEventListener( 'input', function () {
-			renderDetection( parseLinkedInInput( embedField.value ) );
+			var parsed = parseLinkedInInput( embedField.value );
+			renderDetection( parsed );
+			syncCompatHeightUi( parsed, 0 );
+		} );
+	}
+
+	if ( compatMode ) {
+		compatMode.addEventListener( 'change', function () {
+			if ( ! compatHeight ) { return; }
+			if ( compatMode.value === 'custom' ) {
+				compatHeight.disabled = false;
+			} else {
+				compatHeight.value = '';
+				compatHeight.disabled = true;
+			}
 		} );
 	}
 
@@ -218,7 +258,9 @@
 		var payload = {
 			post_id: postId,
 			embed_input: embedField ? embedField.value : '',
-			published_at: publishedField ? publishedField.value : ''
+			published_at: publishedField ? publishedField.value : '',
+			compat_height_mode: compatMode ? compatMode.value : 'default',
+			compat_height: compatHeight ? compatHeight.value : ''
 		};
 		var action = postId ? 'atomic_linkedin_update_post' : 'atomic_linkedin_create_post';
 
@@ -256,8 +298,15 @@
 			var src = isCompat
 				? ( 'https://www.linkedin.com/embed/feed/update/' + parsed.urn )
 				: ( 'https://www.linkedin.com/embed/feed/update/' + parsed.urn + '?collapsed=1' );
+			var h = 650;
+			if ( isCompat ) {
+				if ( compatMode && compatMode.value === 'custom' && compatHeight && String( compatHeight.value || '' ).trim() ) {
+					h = parseInt( compatHeight.value, 10 ) || 0;
+				}
+				if ( ! h ) { h = 720; }
+			}
 			var html = '<p style="margin-top:0;"><strong>' + escapeHtml( title ) + '</strong></p>' +
-				'<iframe style="width:100%;border:0" src="' + escapeHtml( src ) + '" height="650" title="' + escapeHtml( title ) + '" loading="lazy" allowfullscreen></iframe>' +
+				'<iframe style="width:100%;border:0" src="' + escapeHtml( src ) + '" height="' + escapeHtml( String( h ) ) + '" title="' + escapeHtml( title ) + '" loading="lazy" allowfullscreen></iframe>' +
 				'<p class="description" style="margin-bottom:0;">' + escapeHtml( 'Atomic cannot reliably inspect LinkedIn iframe contents. Preview visually before publishing.' ) + '</p>';
 			setHtml( qs( '#atomic-linkedin-preview-container' ), html );
 			if ( window.tb_show ) {
