@@ -1,4 +1,4 @@
-=== Atomic WP Social Sync ===
+=== Atomic LinkedIn Feed ===
 Contributors: bernardcoubeaux
 Tags: social media, linkedin, import, sync, gutenberg
 Requires at least: 6.0
@@ -8,11 +8,11 @@ Stable tag: 0.1.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Import and synchronize social content into native WordPress content.
+Manage a local LinkedIn feed based on manually selected official LinkedIn embeds.
 
 == Description ==
 
-Atomic WP Social Sync treats external platforms as sources and WordPress as the local content layer. Version 0.1.0 supports LinkedIn Company Pages through the official LinkedIn API. Frontend feeds query only local WordPress Social Posts.
+Atomic LinkedIn Feed manages a local LinkedIn feed based on manually selected official LinkedIn embeds. The frontend feed queries only local WordPress Social Posts.
 
 Publisher: Atomic Design Belgium
 
@@ -22,7 +22,9 @@ Email: bernard@atomic-design.be
 
 Website: https://atomic-design.be/
 
-Features include multiple Connections, deduplicated import, protected editorial changes, local images, scheduling, a dynamic Atomic Social Feed block, a shared shortcode renderer, filtering, merged chronological feeds, and pagination.
+Features include a dedicated LinkedIn Posts admin screen, strict official embed parsing (no stored iframe HTML), a dynamic Atomic LinkedIn Feed block, a shared shortcode renderer, local filtering/pagination, and retained provider/OAuth internals for future outbound workflows.
+
+In addition to API import, the plugin supports manually curated **official LinkedIn embeds** (`integration_mode=embed`). An editor can paste an official LinkedIn iframe, embed URL, or Share URN; the plugin stores only a normalized URN and renders a reconstructed official iframe (no stored HTML).
 
 == Installation ==
 
@@ -48,7 +50,7 @@ LinkedIn access and production-tier approval are controlled by LinkedIn and are 
 
 = Does the frontend call LinkedIn? =
 
-No. The block, shortcode, pagination, and Load More endpoint query local WordPress content only.
+The block, shortcode, pagination, and Load More endpoint query local WordPress content only. Official LinkedIn embeds are rendered as iframes, so the visitor’s browser loads `www.linkedin.com` inside the embed frame.
 
 = Will uninstall delete imported content? =
 

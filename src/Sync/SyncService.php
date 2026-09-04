@@ -23,6 +23,7 @@ final class SyncService {
 	private const VERIFICATIONS_PER_RUN     = 5;
 	private const LOCK_TTL                  = 900;
 	private const LOCK_OPTION_PREFIX        = 'atomic_social_sync_lock_';
+	private const MISSING_CONFIRMATION_MIN_INTERVAL = 900;
 
 	public function __construct(
 		private readonly ProviderRegistry $providers,
@@ -36,12 +37,13 @@ final class SyncService {
 	public function syncConnection( string $connection_id ): SyncResult {
 		$result     = new SyncResult();
 		$started_at = microtime( true );
+		$lock_owner = wp_generate_uuid4();
 		$connection = $this->connections->find( $connection_id );
 		if ( null === $connection ) {
 			$result->addError( __( 'Connection was not found.', 'atomic-wp-social-sync' ) );
 			return $result;
 		}
-		if ( ! $this->acquireLock( $connection_id ) ) {
+		if ( ! $this->acquireLock( $connection_id, $lock_owner ) ) {
 			$result->addError( __( 'A synchronization is already running for this connection.', 'atomic-wp-social-sync' ) );
 			return $result;
 		}
@@ -91,7 +93,7 @@ final class SyncService {
 			$this->logger->error( 'Synchronization failed.', array( 'provider' => $connection->provider, 'connection_id' => $connection->id ) );
 		} finally {
 			$result->duration = round( microtime( true ) - $started_at, 3 );
-			$this->releaseLock( $connection_id );
+			$this->releaseLock( $connection_id, $lock_owner );
 		}
 
 		return $result;
@@ -113,23 +115,61 @@ final class SyncService {
 				continue;
 			}
 			++$checked;
-			$verification = $provider->verifyPostExists( $connection, $external_id );
-			if ( 'exists' === $verification->state && null !== $verification->post ) {
-				$this->reconciliation->reconcile( $verification->post, $connection, $result );
-				continue;
+			try {
+				$verification = $provider->verifyPostExists( $connection, $external_id );
+				if ( 'exists' === $verification->state && null !== $verification->post ) {
+					$this->reconciliation->reconcile( $verification->post, $connection, $result );
+					continue;
+				}
+				if ( 'missing' === $verification->state ) {
+					$this->handleMissing( $local_post, $result );
+				}
+			} catch ( ProviderException $exception ) {
+				// Provider/auth/permission/rate/network failures must never advance deletion handling.
+				$result->addError( $exception->getMessage() );
+				$this->logger->error(
+					'Remote existence verification failed.',
+					array(
+						'provider'       => $connection->provider,
+						'category'       => $exception->category,
+						'http_status'    => $exception->http_status,
+						'external_id'    => $external_id,
+						'connection_id'  => $connection->id,
+					)
+				);
+			} catch ( Throwable $exception ) {
+				$result->addError( $exception->getMessage() );
 			}
-			$this->handleMissing( $local_post, $result );
 		}
 	}
 
 	private function handleMissing( WP_Post $local_post, SyncResult $result ): void {
 		$missing_since = (string) get_post_meta( $local_post->ID, MetaKeys::REMOTE_MISSING_SINCE, true );
-		$now           = gmdate( 'c' );
+		$confirmations = (int) get_post_meta( $local_post->ID, MetaKeys::REMOTE_MISSING_CONFIRMATIONS, true );
+		$last_confirmed_at = (string) get_post_meta( $local_post->ID, MetaKeys::REMOTE_MISSING_LAST_CONFIRMED_AT, true );
+		$last_confirmed_ts = $last_confirmed_at ? ( strtotime( $last_confirmed_at ) ?: 0 ) : 0;
+		$now_ts        = time();
+		$now           = gmdate( 'c', $now_ts );
+
 		update_post_meta( $local_post->ID, MetaKeys::LAST_VERIFIED_AT, $now );
 		update_post_meta( $local_post->ID, MetaKeys::REMOTE_STATUS, 'missing' );
 		++$result->missing;
+
 		if ( '' === $missing_since ) {
 			update_post_meta( $local_post->ID, MetaKeys::REMOTE_MISSING_SINCE, $now );
+		}
+
+		// Two missing confirmations must be genuinely independent; avoid applying the policy on
+		// two immediate manual runs.
+		if ( $confirmations >= 1 && $last_confirmed_ts > 0 && ( $now_ts - $last_confirmed_ts ) < self::MISSING_CONFIRMATION_MIN_INTERVAL ) {
+			return;
+		}
+
+		$confirmations = max( $confirmations, 0 ) + 1;
+		update_post_meta( $local_post->ID, MetaKeys::REMOTE_MISSING_CONFIRMATIONS, (string) $confirmations );
+		update_post_meta( $local_post->ID, MetaKeys::REMOTE_MISSING_LAST_CONFIRMED_AT, $now );
+
+		if ( $confirmations < 2 ) {
 			return;
 		}
 
@@ -173,20 +213,40 @@ final class SyncService {
 		return null === $seconds ? null : $from + $seconds;
 	}
 
-	private function acquireLock( string $connection_id ): bool {
+	private function acquireLock( string $connection_id, string $owner ): bool {
 		$key = self::LOCK_OPTION_PREFIX . sanitize_key( $connection_id );
-		if ( add_option( $key, time() + self::LOCK_TTL, '', false ) ) {
+		$lock = array(
+			'owner'      => sanitize_text_field( $owner ),
+			'expires_at' => time() + self::LOCK_TTL,
+		);
+		if ( add_option( $key, $lock, '', false ) ) {
 			return true;
 		}
-		$expires_at = (int) get_option( $key, 0 );
-		if ( $expires_at > 0 && $expires_at < time() ) {
-			delete_option( $key );
-			return add_option( $key, time() + self::LOCK_TTL, '', false );
+
+		$current = get_option( $key, array() );
+		// Backward compatibility: older versions stored the lock as a raw expiry timestamp.
+		if ( is_numeric( $current ) ) {
+			$expires_at = (int) $current;
+			if ( $expires_at > 0 && $expires_at < time() ) {
+				delete_option( $key );
+				return add_option( $key, $lock, '', false );
+			}
+			return false;
+		}
+		if ( is_array( $current ) && isset( $current['expires_at'] ) && (int) $current['expires_at'] > 0 && (int) $current['expires_at'] < time() ) {
+			// Best-effort takeover of an expired lock.
+			update_option( $key, $lock, false );
+			$after = get_option( $key, array() );
+			return is_array( $after ) && isset( $after['owner'] ) && hash_equals( (string) $after['owner'], $lock['owner'] );
 		}
 		return false;
 	}
 
-	private function releaseLock( string $connection_id ): void {
-		delete_option( self::LOCK_OPTION_PREFIX . sanitize_key( $connection_id ) );
+	private function releaseLock( string $connection_id, string $owner ): void {
+		$key     = self::LOCK_OPTION_PREFIX . sanitize_key( $connection_id );
+		$current = get_option( $key, null );
+		if ( is_array( $current ) && isset( $current['owner'] ) && hash_equals( (string) $current['owner'], (string) $owner ) ) {
+			delete_option( $key );
+		}
 	}
 }

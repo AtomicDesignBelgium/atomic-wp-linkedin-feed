@@ -2,6 +2,8 @@
 
 Synchronization is connection-based and protected by a 15-minute expiring lock. Each run asks the registered provider for normalized posts, then reconciles each item against provider + Connection + external ID.
 
+Only imported records (`integration_mode=import`, or legacy posts without `integration_mode`) participate in synchronization. Embed-mode records (`integration_mode=embed`) are editorially managed and never perform remote edit/missing reconciliation.
+
 ## States and transitions
 
 ### New

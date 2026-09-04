@@ -127,6 +127,8 @@ final class SocialPostRepository {
 			update_post_meta( $post_id, $key, $value );
 		}
 		delete_post_meta( $post_id, MetaKeys::REMOTE_MISSING_SINCE );
+		delete_post_meta( $post_id, MetaKeys::REMOTE_MISSING_CONFIRMATIONS );
+		delete_post_meta( $post_id, MetaKeys::REMOTE_MISSING_LAST_CONFIRMED_AT );
 	}
 
 	public function localContentIsUnchanged( WP_Post $post ): bool {

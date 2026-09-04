@@ -52,7 +52,7 @@ final class FeedQuery {
 				'post_status'         => 'publish',
 				'posts_per_page'      => $posts_per_page,
 				'paged'               => $page,
-				'orderby'             => 'date',
+				'orderby'             => array( 'date' => $this->order, 'ID' => $this->order ),
 				'order'               => $this->order,
 				'ignore_sticky_posts' => true,
 				'meta_query'          => $meta_query,
@@ -73,7 +73,7 @@ final class FeedQuery {
 		}
 		global $wpdb;
 		$clauses['join']   .= " LEFT JOIN {$wpdb->postmeta} atomic_social_pinned ON ({$wpdb->posts}.ID = atomic_social_pinned.post_id AND atomic_social_pinned.meta_key = '" . esc_sql( MetaKeys::PINNED ) . "')";
-		$clauses['orderby'] = "CAST(COALESCE(atomic_social_pinned.meta_value, '0') AS UNSIGNED) DESC, {$wpdb->posts}.post_date {$this->order}";
+		$clauses['orderby'] = "CAST(COALESCE(atomic_social_pinned.meta_value, '0') AS UNSIGNED) DESC, {$wpdb->posts}.post_date {$this->order}, {$wpdb->posts}.ID {$this->order}";
 		return $clauses;
 	}
 

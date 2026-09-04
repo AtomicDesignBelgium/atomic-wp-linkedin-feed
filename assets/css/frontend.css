@@ -67,6 +67,28 @@
 .atomic-social-card__source-icon { font-size: 0.65em; }
 .atomic-social-card__cta { display: inline-block; margin-top: auto; font-size: var(--atomic-social-cta-size); font-weight: 600; }
 
+.atomic-social-card__embed {
+	padding: var(--atomic-social-card-padding);
+}
+
+.atomic-social-card__embed-frame {
+	display: block;
+	width: 100%;
+	max-width: 100%;
+	border: 0;
+}
+
+.atomic-social-card__full-link {
+	padding: 0 var(--atomic-social-card-padding) var(--atomic-social-card-padding);
+}
+
+.atomic-social-card__full-link a {
+	display: inline-block;
+	font-size: var(--atomic-social-cta-size);
+	font-weight: 600;
+	color: inherit;
+}
+
 .atomic-social-pagination { margin-top: var(--atomic-social-gap); text-align: center; }
 .atomic-social-pagination ul { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; padding: 0; list-style: none; }
 .atomic-social-pagination a,

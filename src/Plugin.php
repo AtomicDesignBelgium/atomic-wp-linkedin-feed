@@ -7,6 +7,8 @@
 
 namespace AtomicWPSocialSync;
 
+use AtomicWPSocialSync\Admin\LinkedInEmbedMetaBox;
+use AtomicWPSocialSync\Admin\LinkedInPostsPage;
 use AtomicWPSocialSync\Admin\PostSyncMetaBox;
 use AtomicWPSocialSync\Admin\SettingsPage;
 use AtomicWPSocialSync\Blocks\FeedBlock;
@@ -66,6 +68,20 @@ final class Plugin {
 		$linkedin_oauth   = new LinkedInOAuth( $settings, $vault );
 		$linkedin_tokens  = new LinkedInTokenManager( $linkedin_oauth, $vault, $connections );
 		$registry->register( new LinkedInProvider( $linkedin_client, $linkedin_tokens ) );
+		add_filter(
+			'atomic_social_provider_label',
+			static function ( string $label, string $slug ) use ( $registry ): string {
+				$slug = sanitize_key( $slug );
+				try {
+					return $registry->get( $slug )->label();
+				} catch ( \InvalidArgumentException ) {
+					// Allow unregistered providers (e.g. tests/fixtures) to keep the caller label.
+					return $label;
+				}
+			},
+			10,
+			2
+		);
 		$reconciliation   = new ReconciliationService( $post_repository, $settings, $media_importer );
 		$sync_service     = new SyncService( $registry, $connections, $post_repository, $reconciliation, $settings, $logger );
 		$this->scheduler  = new Scheduler( $connections, $sync_service );
@@ -76,6 +92,9 @@ final class Plugin {
 		$this->shortcode  = new Shortcode( $feed_query, $feed_renderer );
 		$settings_page    = new SettingsPage( $settings, $vault, $linkedin_oauth, $linkedin_client, $connections, $registry, $sync_service );
 		$post_meta_box    = new PostSyncMetaBox( $connections, $reconciliation );
+		$linkedin_embed   = new LinkedInEmbedMetaBox();
+		$linkedin_posts   = new LinkedInPostsPage();
+		$linkedin_posts->registerHooks();
 
 		add_action( 'init', array( $this->post_type, 'register' ), 5 );
 		add_action( 'init', array( $this, 'registerAssets' ), 8 );
@@ -84,6 +103,7 @@ final class Plugin {
 		add_action( 'rest_api_init', array( $feed_block, 'registerRoutes' ) );
 		add_action( 'rest_api_init', array( $settings_page, 'registerRoutes' ) );
 
+		add_action( 'admin_menu', array( $linkedin_posts, 'registerMenu' ) );
 		add_action( 'admin_menu', array( $settings_page, 'registerMenu' ) );
 		add_action( 'admin_post_atomic_social_save_settings', array( $settings_page, 'saveSettings' ) );
 		add_action( 'admin_post_atomic_social_connect', array( $settings_page, 'connect' ) );
@@ -91,7 +111,9 @@ final class Plugin {
 		add_action( 'admin_post_atomic_social_connection_action', array( $settings_page, 'connectionAction' ) );
 		add_action( SettingsPage::PENDING_CLEANUP_HOOK, array( $settings_page, 'cleanupPendingCredentials' ) );
 		add_action( 'add_meta_boxes', array( $post_meta_box, 'register' ) );
+		add_action( 'add_meta_boxes', array( $linkedin_embed, 'register' ) );
 		add_action( 'save_post_' . SocialPostType::POST_TYPE, array( $post_meta_box, 'save' ), 20, 2 );
+		add_action( 'save_post_' . SocialPostType::POST_TYPE, array( $linkedin_embed, 'save' ), 20, 2 );
 		add_action( 'added_post_meta', array( $post_meta_box, 'lockFeaturedImage' ), 10, 3 );
 		add_action( 'updated_post_meta', array( $post_meta_box, 'lockFeaturedImage' ), 10, 3 );
 		add_action( 'deleted_post_meta', array( $post_meta_box, 'lockFeaturedImage' ), 10, 3 );
@@ -148,6 +170,12 @@ final class Plugin {
 		foreach ( $this->connections->all() as $connection ) {
 			$connections[] = array( 'id' => $connection->id, 'label' => $connection->account_name, 'provider' => $connection->provider );
 		}
+		$pages = array();
+		foreach ( get_pages( array( 'post_status' => 'publish' ) ) as $page ) {
+			if ( $page instanceof \WP_Post ) {
+				$pages[] = array( 'id' => (int) $page->ID, 'title' => (string) $page->post_title );
+			}
+		}
 		wp_localize_script(
 			'atomic-wp-social-sync-feed-editor-script',
 			'atomicSocialEditor',
@@ -155,6 +183,8 @@ final class Plugin {
 				'providers'          => $providers,
 				'connections'        => $connections,
 				'singlePagesEnabled' => (bool) $this->settings->get( 'enable_single_pages', false ),
+				'newsPageId'         => (int) $this->settings->get( 'news_page_id', 0 ),
+				'pages'              => $pages,
 			)
 		);
 	}

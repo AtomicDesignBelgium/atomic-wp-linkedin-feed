@@ -1,6 +1,6 @@
-# Atomic WP Social Sync
+# Atomic LinkedIn Feed
 
-Atomic WP Social Sync imports supported social content into native WordPress content. LinkedIn is the first provider; the connection, synchronization, storage, and feed layers are provider-independent.
+Atomic LinkedIn Feed manages a local LinkedIn feed based on manually selected official LinkedIn embeds. The storage and feed layers remain provider-independent and reuse one `atomic_social_post` post type, one query, and one renderer.
 
 Version 0.1.0 · GPL-2.0-or-later
 
@@ -10,6 +10,9 @@ Atomic Design Belgium · [atomic-design.be](https://atomic-design.be/)
 
 ## What the MVP provides
 
+- Dedicated **LinkedIn Posts** admin screen with a modal “Add LinkedIn Post” workflow.
+- Strict allowlist parsing of official LinkedIn embed iframe / embed URL / Share URN input, storing only a normalized `urn:li:share:<id>` (never arbitrary HTML).
+- One dynamic **Atomic LinkedIn Feed** block and `[atomic_social_feed]` shortcode querying only local WordPress content (no LinkedIn API calls during rendering/pagination).
 - Generic Connections with separate encrypted OAuth credential storage.
 - LinkedIn 3-legged OAuth, Page discovery, connection testing, reconnect, and disconnect.
 - Current LinkedIn `/rest/posts` retrieval and normalization before persistence.
@@ -22,7 +25,7 @@ Atomic Design Belgium · [atomic-design.be](https://atomic-design.be/)
 - local provider/connection filters, chronological merging, pin/hide controls, numbered pagination, and accessible Load More.
 - optional theme-native Social Post single pages.
 
-Frontend rendering only queries WordPress. It never contacts LinkedIn.
+Frontend rendering only queries WordPress. LinkedIn is contacted only inside official embed iframes (visitor browser) or during administrator-initiated OAuth/API operations (developer/advanced).
 
 ## Installation
 
@@ -33,7 +36,7 @@ Frontend rendering only queries WordPress. It never contacts LinkedIn.
 
 Requires WordPress 6.0+ and PHP 8.1+ with OpenSSL.
 
-## LinkedIn Developer App and OAuth setup
+## Developer / API setup (advanced)
 
 1. Create or select an app in the [LinkedIn Developer Portal](https://developer.linkedin.com/).
 2. Associate and verify the LinkedIn Company Page required by LinkedIn.
@@ -43,19 +46,21 @@ Requires WordPress 6.0+ and PHP 8.1+ with OpenSSL.
 6. Select **Connect with LinkedIn**, approve the requested scopes, and select an approved Page.
 7. Select **Test Connection**, then **Sync Now**.
 
-The OAuth scopes requested are `r_organization_admin`, `r_organization_social`, and `w_organization_social`. The write scope is currently required by LinkedIn's versioned Images API to retrieve image download URLs; this plugin declares create/update/delete capabilities as disabled and does not publish in version 0.1.0.
+The OAuth scopes requested by the retained API importer are `r_organization_admin`, `r_organization_social`, and `w_organization_social`. Publishing is not exposed in v1.
 
 Access tokens are normally valid for 60 days. Programmatic refresh tokens are used only when LinkedIn actually returns one for the approved partner tier; otherwise the connection clearly requires reconnection.
 
 ## Usage
 
-Insert **Atomic Social Feed** in the block editor, or use:
+Insert **Atomic LinkedIn Feed** in the block editor, or use:
 
 ```text
 [atomic_social_feed posts="4" columns="4"]
 ```
 
-Useful shortcode attributes include `providers`, `connections`, `order`, `pinned_first`, `homepage_only`, `show_image`, `image_ratio`, `card_link`, and `pagination` (`none`, `numbers`, or `load_more`).
+Useful shortcode attributes include `providers`, `connections`, `order`, `pinned_first`, `homepage_only`, `presentation` (`auto`, `compact`, `full`), `show_image`, `image_ratio`, `card_link`, and `pagination` (`none`, `numbers`, or `load_more`).
+
+LinkedIn embed mode is documented in [LinkedIn embeds](docs/LINKEDIN-EMBEDS.md), including the “View full news” CTA behavior (configured per block instance).
 
 Override the default design without editing plugin files:
 
@@ -69,6 +74,8 @@ Override the default design without editing plugin files:
 ## Privacy and external services
 
 When an administrator connects or synchronizes LinkedIn, the plugin contacts LinkedIn's authorization service (`www.linkedin.com`) and API (`api.linkedin.com`). Official, temporary LinkedIn media URLs may be downloaded by WordPress when local image import is enabled.
+
+When a feed renders LinkedIn embed-mode posts, visitors load the official LinkedIn iframe from `www.linkedin.com` in their browser.
 
 Imported post content and images are stored locally. Client secrets and OAuth tokens are stored locally in the WordPress database encrypted with an authenticated cipher and a key derived from WordPress salts. They are not exposed through REST responses or frontend markup.
 

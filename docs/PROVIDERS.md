@@ -21,7 +21,13 @@ Do not persist raw responses by default. A future opt-in diagnostic payload stor
 
 Version 0.1.0 has no push UI. LinkedIn declares `can_create`, `can_update`, and `can_delete` false even though the underlying Posts API supports those actions and media retrieval currently requires a write scope. A future publishing extension must add explicit provider methods, capability/permission checks, confirmation, and remote-ID persistence. It must never couple WordPress trashing to remote deletion.
 
-## LinkedIn contract used by 0.1.0
+## LinkedIn embed mode
+
+For LinkedIn V1 website feeds, the intended production path is **manual official embeds** (no API-derived feed rendering). The editor pastes an official iframe / embed URL / URN; the plugin stores only normalized identifiers and renders a reconstructed official iframe.
+
+See [LinkedIn embeds](LINKEDIN-EMBEDS.md) and `Providers/LinkedIn/LinkedInEmbed`.
+
+## LinkedIn API contract (import mode)
 
 Verified on 2026-09-03 against official Microsoft Learn documentation:
 

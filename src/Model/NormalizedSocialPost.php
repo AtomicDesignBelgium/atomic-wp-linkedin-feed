@@ -40,6 +40,24 @@ final class NormalizedSocialPost {
 	}
 
 	public function contentHash(): string {
+		$media_identity = array();
+		foreach ( $this->media as $entry ) {
+			if ( ! is_array( $entry ) ) {
+				continue;
+			}
+			$media_identity[] = array(
+				'type'      => sanitize_key( (string) ( $entry['type'] ?? '' ) ),
+				'source_id' => sanitize_text_field( (string) ( $entry['source_id'] ?? '' ) ),
+				'alt'       => sanitize_text_field( (string) ( $entry['alt'] ?? '' ) ),
+			);
+		}
+		usort(
+			$media_identity,
+			static function ( array $left, array $right ): int {
+				return ( $left['type'] . '|' . $left['source_id'] ) <=> ( $right['type'] . '|' . $right['source_id'] );
+			}
+		);
+
 		return hash(
 			'sha256',
 			wp_json_encode(
@@ -49,7 +67,7 @@ final class NormalizedSocialPost {
 					'excerpt'     => $this->excerpt,
 					'modified_at' => $this->modified_at->format( DATE_ATOM ),
 					'status'      => $this->remote_status,
-					'media'       => $this->media,
+					'media'       => $media_identity,
 				)
 			)
 		);

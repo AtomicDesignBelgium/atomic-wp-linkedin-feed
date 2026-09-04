@@ -141,7 +141,9 @@ final class LinkedInClient {
 		$category = match ( $status ) {
 			401     => ProviderException::AUTHENTICATION,
 			403     => ProviderException::AUTHORIZATION,
-			404     => ProviderException::NOT_FOUND,
+			// LinkedIn error guidance notes 404 can sometimes represent restricted access.
+			// Treat it as ambiguous unless we have endpoint-specific evidence.
+			404     => ProviderException::API,
 			429     => ProviderException::RATE_LIMIT,
 			default => ProviderException::API,
 		};

@@ -1,6 +1,6 @@
 # Development
 
-Atomic WP Social Sync is maintained by Bernard Coubeaux (`bernard@atomic-design.be`) and published by Atomic Design Belgium at https://atomic-design.be/.
+Atomic LinkedIn Feed is maintained by Bernard Coubeaux (`bernard@atomic-design.be`) and published by Atomic Design Belgium at https://atomic-design.be/.
 
 ## Requirements
 
@@ -16,7 +16,7 @@ No production Composer package or paid dependency is used. The plugin has a smal
 Lint all PHP files with the site's PHP binary. In this Local environment, the disposable integration script can be run with `ATOMIC_SOCIAL_RUN_TESTS=1`:
 
 ```text
-php-cgi -q -c <Local PHP config directory> -f tests/wp-integration.php
+php -c <Local php.ini> tests/wp-integration.php
 ```
 
 It verifies registration, idempotent import, remote edits, local/remote conflicts, detach, two-stage missing handling, permission-error safety, and local feed rendering. It creates only fixture-provider Social Posts and removes them in `finally`, restoring plugin settings and Connections.

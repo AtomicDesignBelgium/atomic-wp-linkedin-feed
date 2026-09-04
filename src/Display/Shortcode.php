@@ -21,6 +21,10 @@ final class Shortcode {
 				'order' => 'newest', 'pinned_first' => 'true', 'homepage_only' => 'false', 'show_image' => 'true', 'show_date' => 'true',
 				'show_excerpt' => 'true', 'excerpt_length' => 30, 'show_source' => 'true', 'show_cta' => 'true', 'cta_label' => __( 'View post', 'atomic-wp-social-sync' ),
 				'card_link' => 'original', 'pagination' => 'none', 'gap' => 'medium', 'image_ratio' => 'auto',
+				'presentation' => 'auto',
+				'show_full_news_cta' => 'false',
+				'full_news_cta_label' => __( 'View full news', 'atomic-wp-social-sync' ),
+				'news_page' => 0,
 			),
 			is_array( $attributes ) ? $attributes : array(),
 			'atomic_social_feed'
@@ -46,6 +50,10 @@ final class Shortcode {
 			'pagination' => sanitize_key( (string) $attributes['pagination'] ),
 			'gap' => sanitize_key( (string) $attributes['gap'] ),
 			'imageRatio' => sanitize_key( (string) $attributes['image_ratio'] ),
+			'presentation' => sanitize_key( (string) $attributes['presentation'] ),
+			'showFullNewsCta' => filter_var( $attributes['show_full_news_cta'], FILTER_VALIDATE_BOOLEAN ),
+			'fullNewsCtaLabel' => sanitize_text_field( (string) $attributes['full_news_cta_label'] ),
+			'newsPageId' => (int) $attributes['news_page'],
 		);
 		$block_attributes = $this->renderer->attributes( $block_attributes );
 		return $this->renderer->render( $this->query->query( $block_attributes ), $block_attributes );

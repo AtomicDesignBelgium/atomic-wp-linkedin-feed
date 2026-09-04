@@ -43,6 +43,7 @@ final class PluginSettings {
 			'remote_delete_policy'    => self::DELETE_DRAFT,
 			'import_images'           => true,
 			'enable_single_pages'     => false,
+			'news_page_id'            => 0,
 			'linkedin_client_id'      => '',
 			'debug_logging'           => false,
 		);
@@ -57,6 +58,7 @@ final class PluginSettings {
 			'remote_delete_policy'    => self::allowed( $input['remote_delete_policy'] ?? '', self::deletePolicies(), self::DELETE_DRAFT ),
 			'import_images'           => ! empty( $input['import_images'] ),
 			'enable_single_pages'     => ! empty( $input['enable_single_pages'] ),
+			'news_page_id'            => absint( $input['news_page_id'] ?? 0 ),
 			'linkedin_client_id'      => sanitize_text_field( (string) ( $input['linkedin_client_id'] ?? '' ) ),
 			'debug_logging'           => ! empty( $input['debug_logging'] ),
 		);

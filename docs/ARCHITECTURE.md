@@ -1,11 +1,18 @@
 # Architecture
 
-Atomic WP Social Sync 0.1.0 is a provider-oriented import pipeline:
+Atomic LinkedIn Feed 0.1.0 is a provider-oriented import pipeline:
 
 ```text
 Provider API → Provider adapter → NormalizedSocialPost → SyncService
 → ReconciliationService → SocialPostRepository → atomic_social_post
 → FeedQuery → FeedRenderer → block / shortcode / Load More
+```
+
+It also supports a manual embed pipeline for editor-curated official embeds:
+
+```text
+Admin embed input → strict provider embed parser → atomic_social_post (embed-mode meta)
+→ FeedQuery → FeedRenderer (official iframe reconstruction) → block / shortcode / Load More
 ```
 
 Provider dependencies point inward only as normalized value objects and explicit verification results. The synchronization, persistence, scheduler, and frontend layers do not parse LinkedIn data.
@@ -22,6 +29,7 @@ Provider dependencies point inward only as normalized value objects and explicit
 - `SocialPostRepository` maps normalized source fields to core posts and centralized protected metadata.
 - `MediaImporter` deduplicates Media Library attachments by provider and source media ID.
 - `FeedQuery` and `FeedRenderer` are shared by the dynamic block, shortcode, and local REST Load More endpoint.
+- `integration_mode` stored on `atomic_social_post` selects whether a record is rendered as imported WordPress content, an official provider embed, or (future) a link card.
 
 ## Storage decisions
 

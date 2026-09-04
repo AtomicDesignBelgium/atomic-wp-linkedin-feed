@@ -24,6 +24,8 @@ final class MetaKeys {
 	public const REMOTE_STATUS          = '_atomic_social_remote_status';
 	public const RAW_TYPE               = '_atomic_social_raw_type';
 	public const REMOTE_MISSING_SINCE   = '_atomic_social_remote_missing_since';
+	public const REMOTE_MISSING_CONFIRMATIONS = '_atomic_social_remote_missing_confirmations';
+	public const REMOTE_MISSING_LAST_CONFIRMED_AT = '_atomic_social_remote_missing_last_confirmed_at';
 	public const MEDIA_TYPE             = '_atomic_social_media_type';
 	public const MEDIA_SOURCE_ID        = '_atomic_social_media_source_id';
 	public const GENERATED_TITLE        = '_atomic_social_generated_title';
@@ -36,6 +38,12 @@ final class MetaKeys {
 	public const FEATURED_IMAGE_LOCKED   = '_atomic_social_featured_image_locked';
 	public const SYNC_CONFLICT           = '_atomic_social_sync_conflict';
 	public const PENDING_REMOTE          = '_atomic_social_pending_remote';
+
+	// Integration modes (import/embed/link). Missing means legacy import behavior.
+	public const INTEGRATION_MODE       = '_atomic_social_integration_mode';
+	public const EMBED_URN              = '_atomic_social_embed_urn';
+	public const EMBED_HEIGHT_COMPACT   = '_atomic_social_embed_height_compact';
+	public const EMBED_HEIGHT_FULL      = '_atomic_social_embed_height_full';
 
 	private function __construct() {}
 }

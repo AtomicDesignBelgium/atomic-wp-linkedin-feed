@@ -34,9 +34,14 @@ final class SettingsPage {
 	) {}
 
 	public function registerMenu(): void {
-		add_options_page(
-			__( 'Atomic WP Social Sync', 'atomic-wp-social-sync' ),
-			__( 'Atomic WP Social Sync', 'atomic-wp-social-sync' ),
+		// Embed-mode V1 hides API import settings from normal admin UX.
+		if ( ! $this->debugAllowsApiSettings() ) {
+			return;
+		}
+		add_submenu_page(
+			LinkedInPostsPage::MENU_SLUG,
+			__( 'Developer settings', 'atomic-wp-social-sync' ),
+			__( 'Developer settings', 'atomic-wp-social-sync' ),
 			'manage_options',
 			self::SLUG,
 			array( $this, 'render' )
@@ -229,13 +234,27 @@ final class SettingsPage {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
+		$debug = $this->debugAllowsApiSettings();
 		$settings = $this->settings->all();
 		?>
 		<div class="wrap">
-			<h1><?php esc_html_e( 'Atomic WP Social Sync', 'atomic-wp-social-sync' ); ?></h1>
+			<h1><?php esc_html_e( 'Atomic LinkedIn Feed', 'atomic-wp-social-sync' ); ?></h1>
 			<?php $this->renderNotice(); ?>
-			<p><?php esc_html_e( 'Imports provider content into local WordPress Social Posts. Frontend feeds never contact LinkedIn.', 'atomic-wp-social-sync' ); ?></p>
+			<p><?php esc_html_e( 'This V1 product manages a local LinkedIn feed based on manually selected official LinkedIn embeds.', 'atomic-wp-social-sync' ); ?></p>
+			<p>
+				<a class="button button-primary" href="<?php echo esc_url( admin_url( 'admin.php?page=' . LinkedInPostsPage::MENU_SLUG ) ); ?>">
+					<?php esc_html_e( 'Manage LinkedIn Posts', 'atomic-wp-social-sync' ); ?>
+				</a>
+			</p>
 
+			<?php if ( ! $debug ) : ?>
+				<div class="notice notice-info inline">
+					<p><?php esc_html_e( 'API sync and OAuth settings are intentionally hidden in V1. Existing credentials and provider code are retained internally for a possible future outbound “Publish to LinkedIn” workflow.', 'atomic-wp-social-sync' ); ?></p>
+				</div>
+			<?php else : ?>
+			<details>
+				<summary><strong><?php esc_html_e( 'Developer: API import settings (hidden in V1)', 'atomic-wp-social-sync' ); ?></strong></summary>
+				<div style="margin-top:12px;">
 			<h2><?php esc_html_e( 'Global defaults', 'atomic-wp-social-sync' ); ?></h2>
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 				<input type="hidden" name="action" value="atomic_social_save_settings">
@@ -268,8 +287,13 @@ final class SettingsPage {
 				<?php wp_nonce_field( 'atomic_social_connect' ); ?>
 				<?php submit_button( __( 'Connect with LinkedIn', 'atomic-wp-social-sync' ), 'secondary', 'submit', false ); ?>
 			</form>
+				</div>
+			</details>
+			<?php endif; ?>
 		</div>
-		<script>document.getElementById('atomic-social-copy-callback')?.addEventListener('click',function(){navigator.clipboard.writeText(document.getElementById('atomic-social-callback').textContent);});</script>
+		<?php if ( $debug ) : ?>
+			<script>document.getElementById('atomic-social-copy-callback')?.addEventListener('click',function(){navigator.clipboard.writeText(document.getElementById('atomic-social-callback').textContent);});</script>
+		<?php endif; ?>
 		<?php
 	}
 
@@ -406,11 +430,18 @@ final class SettingsPage {
 
 	/** @param array<string,string> $args */
 	private function pageUrl( array $args = array() ): string {
-		return add_query_arg( array_merge( array( 'page' => self::SLUG ), $args ), admin_url( 'options-general.php' ) );
+		return add_query_arg( array_merge( array( 'page' => self::SLUG ), $args ), admin_url( 'admin.php' ) );
 	}
 
 	private function redirect( string $status, string $message = '' ): never {
 		wp_safe_redirect( $this->pageUrl( array( 'atomic_social_status' => $status, 'atomic_social_message' => $message ) ) );
 		exit;
+	}
+
+	private function debugAllowsApiSettings(): bool {
+		if ( defined( 'ATOMIC_LINKEDIN_FEED_DEBUG' ) && true === ATOMIC_LINKEDIN_FEED_DEBUG ) {
+			return true;
+		}
+		return (bool) apply_filters( 'atomic_linkedin_feed_show_api_settings', false );
 	}
 }

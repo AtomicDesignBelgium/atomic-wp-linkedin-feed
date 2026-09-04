@@ -1,8 +1,8 @@
 <?php
 /**
- * Plugin Name: Atomic WP Social Sync
+ * Plugin Name: Atomic LinkedIn Feed
  * Plugin URI: https://atomic-design.be/
- * Description: Import and synchronize social content into native WordPress content.
+ * Description: Manage a local LinkedIn feed based on manually selected official LinkedIn embeds.
  * Version: 0.1.0
  * Author: Bernard Coubeaux
  * Author URI: https://atomic-design.be/
