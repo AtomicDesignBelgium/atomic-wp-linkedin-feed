@@ -50,6 +50,15 @@ final class MetaKeys {
 	public const EMBED_HEIGHT_OVERRIDE  = '_atomic_social_embed_height_override';
 	// Optional admin metadata (not required for rendering).
 	public const LINKEDIN_SOURCE_ID     = '_atomic_social_linkedin_source_id';
+	public const LINKEDIN_SOURCE_WIDTH  = '_atomic_social_linkedin_source_width';
+	public const LINKEDIN_SOURCE_HEIGHT = '_atomic_social_linkedin_source_height';
+	public const LINKEDIN_TEXT_LENGTH   = '_atomic_social_linkedin_text_length';
+	public const LINKEDIN_MEDIA_COUNT   = '_atomic_social_linkedin_media_count';
+	public const LINKEDIN_ASPECT_DATA   = '_atomic_social_linkedin_aspect_data';
+	public const LINKEDIN_CONTENT_PROFILE = '_atomic_social_linkedin_content_profile';
+
+	public const IMPORTED            = '_atomic_social_imported';
+	public const SOURCE_PAYLOAD      = '_atomic_social_source_payload';
 
 	private function __construct() {}
 }

@@ -91,9 +91,11 @@ final class MediaImporter {
 			wp_delete_file( $temp_file );
 			throw new RuntimeException( sprintf( __( 'Media import failed: %s', 'atomic-wp-social-sync' ), $attachment_id->get_error_message() ) );
 		}
+		$attachment_id = (int) $attachment_id;
+		update_post_meta( $attachment_id, MetaKeys::IMPORTED, '1' );
 		if ( '' !== $alt ) {
 			update_post_meta( $attachment_id, '_wp_attachment_image_alt', sanitize_text_field( $alt ) );
 		}
-		return (int) $attachment_id;
+		return $attachment_id;
 	}
 }

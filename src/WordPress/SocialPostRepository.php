@@ -10,6 +10,7 @@ namespace AtomicWPSocialSync\WordPress;
 use AtomicWPSocialSync\Connections\Connection;
 use AtomicWPSocialSync\Model\NormalizedSocialPost;
 use AtomicWPSocialSync\Support\MetaKeys;
+use AtomicWPSocialSync\Support\PluginSettings;
 use RuntimeException;
 use WP_Post;
 
@@ -60,6 +61,7 @@ final class SocialPostRepository {
 			throw new RuntimeException( $post_id->get_error_message() );
 		}
 
+		update_post_meta( $post_id, MetaKeys::IMPORTED, '1' );
 		$this->writeRemoteMetadata( $post_id, $normalized_post );
 		update_post_meta( $post_id, MetaKeys::GENERATED_TITLE, $generated_title );
 		update_post_meta( $post_id, MetaKeys::LOCAL_CONTENT_HASH, $this->localContentHash( $normalized_post->text, $normalized_post->excerpt ) );
@@ -129,6 +131,28 @@ final class SocialPostRepository {
 		delete_post_meta( $post_id, MetaKeys::REMOTE_MISSING_SINCE );
 		delete_post_meta( $post_id, MetaKeys::REMOTE_MISSING_CONFIRMATIONS );
 		delete_post_meta( $post_id, MetaKeys::REMOTE_MISSING_LAST_CONFIRMED_AT );
+
+		$settings = get_option( PluginSettings::OPTION_NAME, array() );
+		$settings = is_array( $settings ) ? $settings : array();
+		$should_store = ( defined( 'WP_DEBUG' ) && WP_DEBUG ) || ! empty( $settings['developer_tools'] ) || ! empty( $settings['debug_logging'] );
+		if ( $should_store ) {
+			$snapshot = array(
+				'external_id'        => $normalized_post->external_id,
+				'title'              => $normalized_post->title,
+				'text'               => $normalized_post->text,
+				'excerpt'            => $normalized_post->excerpt,
+				'published_at'       => $normalized_post->published_at->format( DATE_ATOM ),
+				'external_url'       => $normalized_post->external_url,
+				'author_id'          => $normalized_post->author_id,
+				'author_name'        => $normalized_post->author_name,
+				'media_source_ids'   => array_values( array_filter( array_map( static fn( mixed $media ): string => is_array( $media ) ? sanitize_text_field( (string) ( $media['source_id'] ?? '' ) ) : '', $normalized_post->media ) ) ),
+				'provider'           => $normalized_post->provider,
+				'connection_id'      => $normalized_post->connection_id,
+				'raw_type'           => $normalized_post->raw_type,
+				'generated_title_lg' => 80,
+			);
+			update_post_meta( $post_id, MetaKeys::SOURCE_PAYLOAD, wp_json_encode( $snapshot, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ) );
+		}
 	}
 
 	public function localContentIsUnchanged( WP_Post $post ): bool {

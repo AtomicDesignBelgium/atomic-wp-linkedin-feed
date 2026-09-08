@@ -22,6 +22,10 @@ final class Shortcode {
 				'show_excerpt' => 'true', 'excerpt_length' => 30, 'show_source' => 'true', 'show_cta' => 'true', 'cta_label' => __( 'View post', 'atomic-wp-social-sync' ),
 				'card_link' => 'original', 'pagination' => 'none', 'gap' => 'medium', 'image_ratio' => 'auto',
 				'presentation' => 'auto',
+				'layout' => 'grid',
+				'min_width' => 340,
+				'carousel_height' => 640,
+				'stack_height_strategy' => 'estimated',
 				'show_full_news_cta' => 'false',
 				'full_news_cta_label' => __( 'View all news', 'atomic-wp-social-sync' ),
 				'news_page' => 0,
@@ -51,6 +55,12 @@ final class Shortcode {
 			'gap' => sanitize_key( (string) $attributes['gap'] ),
 			'imageRatio' => sanitize_key( (string) $attributes['image_ratio'] ),
 			'presentation' => sanitize_key( (string) $attributes['presentation'] ),
+			'layout' => sanitize_key( (string) $attributes['layout'] ),
+			'minWidth' => (int) $attributes['min_width'],
+			'carouselHeight' => (int) $attributes['carousel_height'],
+			'stackHeightStrategy' => in_array( (string) $attributes['stack_height_strategy'], array( 'estimated', 'minimum', 'maximum' ), true )
+				? (string) $attributes['stack_height_strategy']
+				: 'estimated',
 			'showFullNewsCta' => filter_var( $attributes['show_full_news_cta'], FILTER_VALIDATE_BOOLEAN ),
 			'fullNewsCtaLabel' => sanitize_text_field( (string) $attributes['full_news_cta_label'] ),
 			'newsPageId' => (int) $attributes['news_page'],

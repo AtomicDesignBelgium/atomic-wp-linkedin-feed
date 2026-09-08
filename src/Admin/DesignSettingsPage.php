@@ -237,7 +237,16 @@ final class DesignSettingsPage {
 						<section class="atomic-linkedin-design__section">
 							<header class="atomic-linkedin-design__section-header">
 								<h2 class="atomic-linkedin-design__section-title"><?php esc_html_e( 'Layout & spacing', 'atomic-wp-social-sync' ); ?></h2>
-								<p class="atomic-linkedin-design__section-description"><?php esc_html_e( 'Define the default spacing used by Atomic LinkedIn Posts layouts.', 'atomic-wp-social-sync' ); ?></p>
+								<p class="atomic-linkedin-design__section-description">
+									<?php esc_html_e( 'Define the default spacing used by Atomic LinkedIn Posts layouts.', 'atomic-wp-social-sync' ); ?>
+									<?php
+									$display_help_url = add_query_arg(
+										array( 'page' => 'atomic-linkedin-feed-settings', 'tab' => 'help' ),
+										admin_url( 'admin.php' )
+									) . '#ermn-help-display';
+									?>
+									<a href="<?php echo esc_url( $display_help_url ); ?>"><?php esc_html_e( 'Learn about display modes', 'atomic-wp-social-sync' ); ?></a>
+								</p>
 							</header>
 
 							<div class="atomic-linkedin-design__fields">
@@ -314,6 +323,223 @@ final class DesignSettingsPage {
 									<div class="atomic-linkedin-design__field-control">
 										<input id="atomic-layout-separator-spacing" type="number" class="small-text" name="settings[layout_separator_spacing]" min="0" max="120" value="<?php echo esc_attr( (string) ( $s['layout_separator_spacing'] ?? 40 ) ); ?>">
 										<span class="description"><?php esc_html_e( 'px', 'atomic-wp-social-sync' ); ?></span>
+									</div>
+								</div>
+
+								<div class="atomic-linkedin-design__field">
+									<div class="atomic-linkedin-design__field-label">
+										<label for="atomic-layout-stack-height-strategy"><?php esc_html_e( 'Stack height strategy', 'atomic-wp-social-sync' ); ?></label>
+										<p class="atomic-linkedin-design__field-help"><?php esc_html_e( 'Controls how the shared Stack layout height is calculated from rendered LinkedIn posts.', 'atomic-wp-social-sync' ); ?></p>
+									</div>
+									<div class="atomic-linkedin-design__field-control">
+										<select id="atomic-layout-stack-height-strategy" name="settings[layout_stack_height_strategy]">
+											<option value="estimated" <?php selected( 'estimated', (string) ( $s['layout_stack_height_strategy'] ?? 'estimated' ) ); ?>><?php esc_html_e( 'Estimated / Adaptive — Recommended', 'atomic-wp-social-sync' ); ?></option>
+											<option value="minimum" <?php selected( 'minimum', (string) ( $s['layout_stack_height_strategy'] ?? 'estimated' ) ); ?>><?php esc_html_e( 'Minimum', 'atomic-wp-social-sync' ); ?></option>
+											<option value="maximum" <?php selected( 'maximum', (string) ( $s['layout_stack_height_strategy'] ?? 'estimated' ) ); ?>><?php esc_html_e( 'Maximum', 'atomic-wp-social-sync' ); ?></option>
+										</select>
+										<p class="description">
+											<?php
+											$strategy_desc = array(
+												'estimated' => __( 'Automatically calculates a balanced height from detected posts.', 'atomic-wp-social-sync' ),
+												'minimum'   => __( 'Uses the shortest detected post for the most compact layout.', 'atomic-wp-social-sync' ),
+												'maximum'   => __( 'Uses the tallest detected post. May create large empty areas and is generally not recommended visually.', 'atomic-wp-social-sync' ),
+											);
+											$current = (string) ( $s['layout_stack_height_strategy'] ?? 'estimated' );
+											echo esc_html( $strategy_desc[ $current ] ?? $strategy_desc['estimated'] );
+											?>
+										</p>
+									</div>
+								</div>
+							</div>
+						</section>
+
+						<section class="atomic-linkedin-design__section">
+							<header class="atomic-linkedin-design__section-header">
+								<h2 class="atomic-linkedin-design__section-title"><?php esc_html_e( 'Post CTA', 'atomic-wp-social-sync' ); ?></h2>
+								<p class="atomic-linkedin-design__section-description"><?php esc_html_e( 'Default styling for the per-post “Read full news” link (when enabled by a block).', 'atomic-wp-social-sync' ); ?></p>
+							</header>
+							<div class="atomic-linkedin-design__fields">
+								<div class="atomic-linkedin-design__field">
+									<div class="atomic-linkedin-design__field-label">
+										<label for="atomic-post-cta-font-size"><?php esc_html_e( 'Font size', 'atomic-wp-social-sync' ); ?></label>
+										<p class="atomic-linkedin-design__field-help"><?php esc_html_e( 'Text size used for the per-post CTA link.', 'atomic-wp-social-sync' ); ?></p>
+									</div>
+									<div class="atomic-linkedin-design__field-control">
+										<input id="atomic-post-cta-font-size" type="number" class="small-text" name="settings[post_cta_font_size]" min="10" max="26" value="<?php echo esc_attr( (string) ( $s['post_cta_font_size'] ?? 16 ) ); ?>">
+										<span class="description"><?php esc_html_e( 'px', 'atomic-wp-social-sync' ); ?></span>
+									</div>
+								</div>
+
+								<div class="atomic-linkedin-design__field">
+									<div class="atomic-linkedin-design__field-label">
+										<label for="atomic-post-cta-font-weight"><?php esc_html_e( 'Font weight', 'atomic-wp-social-sync' ); ?></label>
+										<p class="atomic-linkedin-design__field-help"><?php esc_html_e( 'Font weight used by the per-post CTA link.', 'atomic-wp-social-sync' ); ?></p>
+									</div>
+									<div class="atomic-linkedin-design__field-control">
+										<input id="atomic-post-cta-font-weight" type="number" class="small-text" name="settings[post_cta_font_weight]" min="200" max="900" step="50" value="<?php echo esc_attr( (string) ( $s['post_cta_font_weight'] ?? 600 ) ); ?>">
+									</div>
+								</div>
+
+								<div class="atomic-linkedin-design__field">
+									<div class="atomic-linkedin-design__field-label">
+										<label for="atomic-post-cta-color"><?php esc_html_e( 'Link color', 'atomic-wp-social-sync' ); ?></label>
+										<p class="atomic-linkedin-design__field-help"><?php esc_html_e( 'Leave empty to inherit the theme link color.', 'atomic-wp-social-sync' ); ?></p>
+									</div>
+									<div class="atomic-linkedin-design__field-control">
+										<?php
+										$this->renderColorControl(
+											'atomic-post-cta-color',
+											'settings[post_cta_color]',
+											(string) ( $s['post_cta_color'] ?? '' ),
+											$palette,
+											__( 'Inherit (default)', 'atomic-wp-social-sync' )
+										);
+										?>
+									</div>
+								</div>
+							</div>
+						</section>
+
+						<section class="atomic-linkedin-design__section">
+							<header class="atomic-linkedin-design__section-header">
+								<h2 class="atomic-linkedin-design__section-title"><?php esc_html_e( 'Editorial', 'atomic-wp-social-sync' ); ?></h2>
+								<p class="atomic-linkedin-design__section-description"><?php esc_html_e( 'Default styling for editorial titles and dates rendered above LinkedIn embeds.', 'atomic-wp-social-sync' ); ?></p>
+							</header>
+							<div class="atomic-linkedin-design__fields">
+								<div class="atomic-linkedin-design__field atomic-linkedin-design__field--inline">
+									<div class="atomic-linkedin-design__field-label">
+										<label for="atomic-editorial-title-size"><?php esc_html_e( 'Title typography', 'atomic-wp-social-sync' ); ?></label>
+									</div>
+									<div class="atomic-linkedin-design__field-control">
+										<div class="atomic-linkedin-design__inline">
+											<div>
+												<label class="atomic-linkedin-design__mini-label" for="atomic-editorial-title-size"><?php esc_html_e( 'Size', 'atomic-wp-social-sync' ); ?></label>
+												<input id="atomic-editorial-title-size" type="number" class="small-text" name="settings[editorial_title_size]" min="12" max="40" value="<?php echo esc_attr( (string) ( $s['editorial_title_size'] ?? 18 ) ); ?>">
+												<span class="description"><?php esc_html_e( 'px', 'atomic-wp-social-sync' ); ?></span>
+											</div>
+											<div>
+												<label class="atomic-linkedin-design__mini-label" for="atomic-editorial-title-weight"><?php esc_html_e( 'Weight', 'atomic-wp-social-sync' ); ?></label>
+												<input id="atomic-editorial-title-weight" type="number" class="small-text" name="settings[editorial_title_weight]" min="200" max="900" step="50" value="<?php echo esc_attr( (string) ( $s['editorial_title_weight'] ?? 650 ) ); ?>">
+											</div>
+										</div>
+									</div>
+								</div>
+
+								<div class="atomic-linkedin-design__field">
+									<div class="atomic-linkedin-design__field-label">
+										<label for="atomic-editorial-title-color"><?php esc_html_e( 'Title color', 'atomic-wp-social-sync' ); ?></label>
+										<p class="atomic-linkedin-design__field-help"><?php esc_html_e( 'Leave empty to inherit theme text color.', 'atomic-wp-social-sync' ); ?></p>
+									</div>
+									<div class="atomic-linkedin-design__field-control">
+										<?php
+										$this->renderColorControl(
+											'atomic-editorial-title-color',
+											'settings[editorial_title_color]',
+											(string) ( $s['editorial_title_color'] ?? '' ),
+											$palette,
+											__( 'Inherit (default)', 'atomic-wp-social-sync' )
+										);
+										?>
+									</div>
+								</div>
+
+								<div class="atomic-linkedin-design__field atomic-linkedin-design__field--inline">
+									<div class="atomic-linkedin-design__field-label">
+										<label for="atomic-editorial-date-size"><?php esc_html_e( 'Date typography', 'atomic-wp-social-sync' ); ?></label>
+									</div>
+									<div class="atomic-linkedin-design__field-control">
+										<div class="atomic-linkedin-design__inline">
+											<div>
+												<label class="atomic-linkedin-design__mini-label" for="atomic-editorial-date-size"><?php esc_html_e( 'Size', 'atomic-wp-social-sync' ); ?></label>
+												<input id="atomic-editorial-date-size" type="number" class="small-text" name="settings[editorial_date_size]" min="10" max="26" value="<?php echo esc_attr( (string) ( $s['editorial_date_size'] ?? 14 ) ); ?>">
+												<span class="description"><?php esc_html_e( 'px', 'atomic-wp-social-sync' ); ?></span>
+											</div>
+											<div>
+												<label class="atomic-linkedin-design__mini-label" for="atomic-scroll-margin-top"><?php esc_html_e( 'Scroll offset', 'atomic-wp-social-sync' ); ?></label>
+												<input id="atomic-scroll-margin-top" type="number" class="small-text" name="settings[scroll_margin_top]" min="0" max="200" value="<?php echo esc_attr( (string) ( $s['scroll_margin_top'] ?? 80 ) ); ?>">
+												<span class="description"><?php esc_html_e( 'px', 'atomic-wp-social-sync' ); ?></span>
+											</div>
+										</div>
+									</div>
+								</div>
+
+								<div class="atomic-linkedin-design__field">
+									<div class="atomic-linkedin-design__field-label">
+										<label for="atomic-editorial-date-color"><?php esc_html_e( 'Date color', 'atomic-wp-social-sync' ); ?></label>
+										<p class="atomic-linkedin-design__field-help"><?php esc_html_e( 'Leave empty to inherit theme text color.', 'atomic-wp-social-sync' ); ?></p>
+									</div>
+									<div class="atomic-linkedin-design__field-control">
+										<?php
+										$this->renderColorControl(
+											'atomic-editorial-date-color',
+											'settings[editorial_date_color]',
+											(string) ( $s['editorial_date_color'] ?? '' ),
+											$palette,
+											__( 'Inherit (default)', 'atomic-wp-social-sync' )
+										);
+										?>
+									</div>
+								</div>
+							</div>
+						</section>
+
+						<section class="atomic-linkedin-design__section">
+							<header class="atomic-linkedin-design__section-header">
+								<h2 class="atomic-linkedin-design__section-title"><?php esc_html_e( 'News navigation', 'atomic-wp-social-sync' ); ?></h2>
+								<p class="atomic-linkedin-design__section-description"><?php esc_html_e( 'Default styling for the optional Stacked-only News navigation sidebar.', 'atomic-wp-social-sync' ); ?></p>
+							</header>
+							<div class="atomic-linkedin-design__fields">
+								<div class="atomic-linkedin-design__field">
+									<div class="atomic-linkedin-design__field-label">
+										<label for="atomic-news-nav-top-offset"><?php esc_html_e( 'Sticky top offset', 'atomic-wp-social-sync' ); ?></label>
+										<p class="atomic-linkedin-design__field-help"><?php esc_html_e( 'Distance from the top of the viewport when sticky navigation is enabled.', 'atomic-wp-social-sync' ); ?></p>
+									</div>
+									<div class="atomic-linkedin-design__field-control">
+										<input id="atomic-news-nav-top-offset" type="number" class="small-text" name="settings[news_nav_top_offset]" min="0" max="240" value="<?php echo esc_attr( (string) ( $s['news_nav_top_offset'] ?? 80 ) ); ?>">
+										<span class="description"><?php esc_html_e( 'px', 'atomic-wp-social-sync' ); ?></span>
+									</div>
+								</div>
+
+								<div class="atomic-linkedin-design__field atomic-linkedin-design__field--inline">
+									<div class="atomic-linkedin-design__field-label">
+										<label for="atomic-news-nav-font-size"><?php esc_html_e( 'Typography', 'atomic-wp-social-sync' ); ?></label>
+									</div>
+									<div class="atomic-linkedin-design__field-control">
+										<div class="atomic-linkedin-design__inline">
+											<div>
+												<label class="atomic-linkedin-design__mini-label" for="atomic-news-nav-font-size"><?php esc_html_e( 'Text', 'atomic-wp-social-sync' ); ?></label>
+												<input id="atomic-news-nav-font-size" type="number" class="small-text" name="settings[news_nav_font_size]" min="10" max="26" value="<?php echo esc_attr( (string) ( $s['news_nav_font_size'] ?? 16 ) ); ?>">
+												<span class="description"><?php esc_html_e( 'px', 'atomic-wp-social-sync' ); ?></span>
+											</div>
+											<div>
+												<label class="atomic-linkedin-design__mini-label" for="atomic-news-nav-date-size"><?php esc_html_e( 'Date', 'atomic-wp-social-sync' ); ?></label>
+												<input id="atomic-news-nav-date-size" type="number" class="small-text" name="settings[news_nav_date_size]" min="10" max="20" value="<?php echo esc_attr( (string) ( $s['news_nav_date_size'] ?? 13 ) ); ?>">
+												<span class="description"><?php esc_html_e( 'px', 'atomic-wp-social-sync' ); ?></span>
+											</div>
+											<div>
+												<label class="atomic-linkedin-design__mini-label" for="atomic-news-nav-item-gap"><?php esc_html_e( 'Gap', 'atomic-wp-social-sync' ); ?></label>
+												<input id="atomic-news-nav-item-gap" type="number" class="small-text" name="settings[news_nav_item_gap]" min="0" max="40" value="<?php echo esc_attr( (string) ( $s['news_nav_item_gap'] ?? 12 ) ); ?>">
+												<span class="description"><?php esc_html_e( 'px', 'atomic-wp-social-sync' ); ?></span>
+											</div>
+										</div>
+									</div>
+								</div>
+
+								<div class="atomic-linkedin-design__field">
+									<div class="atomic-linkedin-design__field-label">
+										<label for="atomic-news-nav-active-color"><?php esc_html_e( 'Active link color', 'atomic-wp-social-sync' ); ?></label>
+										<p class="atomic-linkedin-design__field-help"><?php esc_html_e( 'Leave empty to inherit theme text color.', 'atomic-wp-social-sync' ); ?></p>
+									</div>
+									<div class="atomic-linkedin-design__field-control">
+										<?php
+										$this->renderColorControl(
+											'atomic-news-nav-active-color',
+											'settings[news_nav_active_color]',
+											(string) ( $s['news_nav_active_color'] ?? '' ),
+											$palette,
+											__( 'Inherit (default)', 'atomic-wp-social-sync' )
+										);
+										?>
 									</div>
 								</div>
 							</div>

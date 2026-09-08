@@ -29,7 +29,7 @@
 	}
 
 	document.addEventListener( 'DOMContentLoaded', function () {
-		document.querySelectorAll( '[data-atomic-linkedin-carousel]' ).forEach( initCarousel );
+		document.querySelectorAll( '[data-atomic-linkedin-carousel], [data-ermn-news-carousel]' ).forEach( initCarousel );
 	} );
 } )();
 

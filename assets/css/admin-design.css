@@ -393,3 +393,571 @@
 		max-width: 180px;
 	}
 }
+
+/* ============================================================
+   ERMN LinkedIn News — Help / Documentation page
+   Scoped under .atomic-linkedin-admin.atomic-linkedin-help
+   ============================================================ */
+@media screen {
+	.atomic-linkedin-admin.atomic-linkedin-help {
+		max-width: 1160px;
+		margin-top: 8px;
+		color: #1d2327;
+		line-height: 1.55;
+	}
+
+	/* ---------- Header ---------- */
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__header {
+		background: #fff;
+		border: 1px solid #dcdcde;
+		border-radius: 10px;
+		padding: 24px 28px;
+		margin-bottom: 20px;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__title {
+		margin: 0 0 8px 0;
+		font-size: 22px;
+		font-weight: 650;
+		line-height: 1.2;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__subtitle {
+		margin: 0 0 16px 0;
+		max-width: 78ch;
+		color: #50575e;
+		font-size: 14px;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__meta {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 10px 14px;
+		align-items: center;
+		padding-top: 12px;
+		border-top: 1px solid #f0f0f1;
+		font-size: 13px;
+		color: #50575e;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__meta-item {
+		display: inline-flex;
+		align-items: center;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__meta-sep {
+		color: #c3c4c7;
+	}
+
+	/* ---------- Quick action cards ---------- */
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__actions {
+		display: grid;
+		grid-template-columns: repeat(4, 1fr);
+		gap: 16px;
+		margin-bottom: 20px;
+	}
+	@media (max-width: 1024px) {
+		.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__actions {
+			grid-template-columns: repeat(2, 1fr);
+		}
+	}
+	@media (max-width: 560px) {
+		.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__actions {
+			grid-template-columns: 1fr;
+		}
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__action-card {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		padding: 20px 18px;
+		background: #fff;
+		border: 1px solid #dcdcde;
+		border-radius: 10px;
+		text-decoration: none;
+		color: inherit;
+		box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+		transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__action-card:hover,
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__action-card:focus-visible {
+		border-color: #2271b1;
+		box-shadow: 0 4px 12px rgba(34,113,177,0.12);
+		transform: translateY(-1px);
+		outline: none;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__action-icon {
+		width: 36px;
+		height: 36px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		background: #f0f6fc;
+		color: #2271b1;
+		border-radius: 8px;
+		font-size: 20px;
+		line-height: 1;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__action-title {
+		margin: 2px 0 0 0;
+		font-size: 14.5px;
+		font-weight: 650;
+		color: #1d2327;
+		line-height: 1.3;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__action-desc {
+		margin: 0;
+		font-size: 13px;
+		color: #50575e;
+		line-height: 1.5;
+		flex-grow: 1;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__action-link {
+		margin-top: 6px;
+		font-size: 13px;
+		font-weight: 600;
+		color: #2271b1;
+		display: inline-flex;
+		align-items: center;
+		gap: 2px;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__action-link .dashicons {
+		font-size: 15px;
+		width: 15px;
+		height: 15px;
+		line-height: 1;
+	}
+
+	/* ---------- Table of contents ---------- */
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__toc {
+		background: #fff;
+		border: 1px solid #dcdcde;
+		border-radius: 10px;
+		padding: 16px 24px;
+		margin-bottom: 20px;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__toc-title {
+		margin: 0 0 8px 0;
+		font-size: 13px;
+		font-weight: 650;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		color: #50575e;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__toc-list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px 20px;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__toc-list li {
+		margin: 0;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__toc-list a {
+		font-size: 13.5px;
+		font-weight: 500;
+		color: #2271b1;
+		text-decoration: none;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__toc-list a:hover {
+		text-decoration: underline;
+	}
+
+	/* ---------- Content cards / sections ---------- */
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__card {
+		background: #fff;
+		border: 1px solid #dcdcde;
+		border-radius: 10px;
+		padding: 22px 26px;
+		margin-bottom: 20px;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__card--accent {
+		border-left: 4px solid #007cba;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__card--warning {
+		border-left: 4px solid #dba617;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__card-header {
+		margin-bottom: 14px;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__card-title {
+		margin: 0 0 4px 0;
+		font-size: 17px;
+		font-weight: 650;
+		line-height: 1.25;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__card-title .dashicons {
+		font-size: 20px;
+		width: 20px;
+		height: 20px;
+		line-height: 1;
+		color: #50575e;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__section-title {
+		margin: 18px 0 10px 0;
+		font-size: 15px;
+		font-weight: 650;
+		line-height: 1.35;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__sub-title {
+		margin: 0 0 10px 0;
+		font-size: 14px;
+		font-weight: 650;
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		color: #1d2327;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__sub-title .dashicons {
+		color: #007cba;
+		font-size: 16px;
+		width: 16px;
+		height: 16px;
+		line-height: 1;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__step-label {
+		margin: 16px 0 6px 0;
+		font-size: 13px;
+		font-weight: 600;
+		color: #1d2327;
+		text-transform: uppercase;
+		letter-spacing: 0.02em;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__subsection > p {
+		margin-top: 0;
+	}
+
+	/* ---------- Two column layout ---------- */
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__two-col {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 24px 32px;
+	}
+	@media (max-width: 720px) {
+		.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__two-col {
+			grid-template-columns: 1fr;
+			gap: 20px;
+		}
+	}
+
+	/* ---------- Lists ---------- */
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__steps {
+		margin: 0 0 4px 0;
+		padding-left: 22px;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__steps li {
+		margin: 4px 0;
+		font-size: 13.5px;
+		line-height: 1.55;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__bullet-list {
+		margin: 6px 0;
+		padding-left: 20px;
+		list-style: disc;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__bullet-list li {
+		margin: 3px 0;
+		font-size: 13.5px;
+		line-height: 1.55;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__bullet-list--tight {
+		margin: 4px 0;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__bullet-list--tight li {
+		margin: 2px 0;
+		font-size: 13px;
+	}
+
+	/* ---------- Notes / callouts ---------- */
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__note {
+		display: flex;
+		gap: 10px;
+		align-items: flex-start;
+		padding: 12px 14px;
+		background: #f6f7f7;
+		border: 1px solid #c3c4c7;
+		border-left: 4px solid #72aee6;
+		border-radius: 4px;
+		margin: 14px 0 0 0;
+		font-size: 13px;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__note--warning {
+		border-left-color: #dba617;
+		background: #fefbf0;
+		border-color: #f0e2b2;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__note .dashicons {
+		flex-shrink: 0;
+		margin-top: 1px;
+		color: #72aee6;
+		font-size: 18px;
+		width: 18px;
+		height: 18px;
+		line-height: 1;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__note--warning .dashicons {
+		color: #c98300;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__note p {
+		margin: 0;
+	}
+
+	/* ---------- Feature list (Manage News) ---------- */
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__feature-list {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__feature-list li {
+		display: flex;
+		gap: 12px;
+		align-items: flex-start;
+		padding: 10px 0;
+		border-bottom: 1px solid #f0f0f1;
+		font-size: 13.5px;
+		line-height: 1.5;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__feature-list li:last-child {
+		border-bottom: none;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__feature-list .dashicons {
+		flex-shrink: 0;
+		margin-top: 2px;
+		color: #007cba;
+		font-size: 16px;
+		width: 16px;
+		height: 16px;
+		line-height: 1;
+	}
+
+	/* ---------- Bulk import steps ---------- */
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__bulk-steps {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 18px;
+		margin-top: 10px;
+	}
+	@media (max-width: 900px) {
+		.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__bulk-steps {
+			grid-template-columns: 1fr;
+		}
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__bulk-step {
+		position: relative;
+		background: #f6f7f7;
+		border: 1px solid #dcdcde;
+		border-radius: 8px;
+		padding: 16px 16px 12px 16px;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__bulk-step-num {
+		position: absolute;
+		top: -10px;
+		left: 14px;
+		width: 26px;
+		height: 26px;
+		background: #2271b1;
+		color: #fff;
+		border-radius: 999px;
+		font-size: 13px;
+		font-weight: 700;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		line-height: 1;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__bulk-step-title {
+		margin: 8px 0 8px 0;
+		font-size: 14px;
+		font-weight: 650;
+		color: #1d2327;
+	}
+
+	/* ---------- Display layout cards ---------- */
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__layouts {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 16px;
+		margin-top: 8px;
+	}
+	@media (max-width: 900px) {
+		.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__layouts {
+			grid-template-columns: 1fr;
+		}
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__layout-card {
+		background: #f9f9fa;
+		border: 1px solid #e4e4e7;
+		border-radius: 8px;
+		padding: 16px 18px;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__layout-title {
+		margin: 0 0 8px 0;
+		font-size: 14px;
+		font-weight: 650;
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		color: #1d2327;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__layout-title .dashicons {
+		color: #50575e;
+		font-size: 16px;
+		width: 16px;
+		height: 16px;
+		line-height: 1;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__layout-best {
+		margin: 0 0 6px 0;
+		font-size: 12.5px;
+		color: #50575e;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__layout-desc {
+		margin: 4px 0 0 0;
+		font-size: 13px;
+		color: #1d2327;
+		line-height: 1.5;
+	}
+
+	/* ---------- Muted text ---------- */
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__muted {
+		color: #50575e;
+		font-size: 13px;
+	}
+
+	/* ---------- Details / Accordions ---------- */
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__details {
+		border: 1px solid #dcdcde;
+		border-radius: 6px;
+		margin: 10px 0;
+		background: #fff;
+		overflow: hidden;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__details-summary {
+		padding: 12px 14px;
+		cursor: pointer;
+		font-weight: 600;
+		font-size: 13.5px;
+		color: #1d2327;
+		background: #f6f7f7;
+		list-style: none;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		user-select: none;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__details-summary::-webkit-details-marker {
+		display: none;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__details-summary::after {
+		content: "";
+		flex-shrink: 0;
+		width: 0;
+		height: 0;
+		border-left: 5px solid transparent;
+		border-right: 5px solid transparent;
+		border-top: 6px solid #50575e;
+		transition: transform 0.15s ease;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__details[open] .ermn-help__details-summary::after {
+		transform: rotate(180deg);
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__details-summary:hover {
+		background: #f0f0f1;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__details-summary:focus-visible {
+		outline: 2px solid #2271b1;
+		outline-offset: -2px;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__details-content {
+		padding: 14px 16px;
+		border-top: 1px solid #e4e4e7;
+		font-size: 13.5px;
+		line-height: 1.6;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__details-content > p:first-child {
+		margin-top: 0;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__details-content > p:last-child {
+		margin-bottom: 0;
+	}
+
+	/* ---------- Support card ---------- */
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__support {
+		background: #f0f6fc;
+		border: 1px solid #c5d9ed;
+		border-radius: 10px;
+		padding: 22px 26px;
+		margin-bottom: 20px;
+		text-align: center;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__support-title {
+		margin: 0 0 6px 0;
+		font-size: 16px;
+		font-weight: 650;
+		color: #1d2327;
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__support-title .dashicons {
+		color: #2271b1;
+		font-size: 18px;
+		width: 18px;
+		height: 18px;
+		line-height: 1;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__support-desc {
+		margin: 0 auto 14px auto;
+		max-width: 56ch;
+		font-size: 13.5px;
+		color: #50575e;
+	}
+
+	/* ---------- Footer / credits ---------- */
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__footer {
+		margin-top: 8px;
+		margin-bottom: 20px;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__footer-inner {
+		border-top: 1px solid #dcdcde;
+		padding: 16px 4px 8px 4px;
+		text-align: center;
+		font-size: 12.5px;
+		color: #646970;
+		line-height: 1.6;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__footer-top {
+		margin: 0 0 2px 0;
+		font-weight: 500;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__footer-bottom {
+		margin: 0;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__footer-link {
+		color: #2271b1;
+		text-decoration: none;
+		font-weight: 600;
+		display: inline-flex;
+		align-items: center;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help .ermn-help__footer-link:hover {
+		text-decoration: underline;
+	}
+
+	/* ---------- Links consistency ---------- */
+	.atomic-linkedin-admin.atomic-linkedin-help a {
+		color: #2271b1;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help a:focus-visible {
+		outline: 2px solid #2271b1;
+		outline-offset: 1px;
+		border-radius: 2px;
+	}
+	.atomic-linkedin-admin.atomic-linkedin-help code {
+		background: #f0f0f1;
+		padding: 1px 5px;
+		border-radius: 3px;
+		font-size: 12.5px;
+	}
+}

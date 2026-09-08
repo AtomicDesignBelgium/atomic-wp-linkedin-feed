@@ -24,6 +24,9 @@ if ( ! is_plugin_active( 'atomic-wp-linkedin-feed/atomic-wp-linkedin-feed.php' )
 
 use AtomicWPSocialSync\Connections\Connection;
 use AtomicWPSocialSync\Admin\LinkedInEmbedMetaBox;
+use AtomicWPSocialSync\Admin\LinkedInFeedSettingsPage;
+use AtomicWPSocialSync\Admin\LinkedInPostsPage;
+use AtomicWPSocialSync\Admin\DesignSettingsPage;
 use AtomicWPSocialSync\Plugin;
 use AtomicWPSocialSync\Connections\ConnectionRepository;
 use AtomicWPSocialSync\Display\FeedQuery;
@@ -45,6 +48,7 @@ use AtomicWPSocialSync\Support\IntegrationMode;
 use AtomicWPSocialSync\Support\Logger;
 use AtomicWPSocialSync\Support\MetaKeys;
 use AtomicWPSocialSync\Support\PluginSettings;
+use AtomicWPSocialSync\Support\TitlePolicy;
 use AtomicWPSocialSync\Import\LinkedInHtmlImportParser;
 use AtomicWPSocialSync\Sync\ReconciliationService;
 use AtomicWPSocialSync\Sync\SyncResult;
@@ -425,22 +429,22 @@ try {
 	$method->setAccessible( true );
 	$test_id_one = '9990000000000000001';
 	$test_id_two = '9990000000000000002';
-	$post_one = (int) $method->invoke( $posts_page, null, $test_id_one, '2026-01-03T10:00', null );
-	$post_two = (int) $method->invoke( $posts_page, null, $test_id_two, '2026-01-03T10:00', null );
+	$post_one = (int) $method->invoke( $posts_page, null, $test_id_one, '2026-01-03T10:00', null, '' );
+	$post_two = (int) $method->invoke( $posts_page, null, $test_id_two, '2026-01-03T10:00', null, '' );
 	atomic_social_assert( $post_one > 0 && $post_two > 0 && $post_one !== $post_two, 'Creating two different Share IDs must succeed.' );
 	$created_post_ids[] = $post_one;
 	$created_post_ids[] = $post_two;
 	try {
-		$method->invoke( $posts_page, null, $test_id_one, '2026-01-03T10:00', null );
+		$method->invoke( $posts_page, null, $test_id_one, '2026-01-03T10:00', null, '' );
 		atomic_social_assert( false, 'Duplicate Share ID should be rejected.' );
 	} catch ( Throwable ) {
 	}
 	// Activity fallback duplicates.
-	$activity_post = (int) $method->invoke( $posts_page, null, 'https://www.linkedin.com/feed/update/urn:li:activity:9990000000000000003', '2026-01-03T10:00', null );
+	$activity_post = (int) $method->invoke( $posts_page, null, 'https://www.linkedin.com/feed/update/urn:li:activity:9990000000000000003', '2026-01-03T10:00', null, '' );
 	atomic_social_assert( $activity_post > 0, 'Creating an activity fallback post must succeed.' );
 	$created_post_ids[] = $activity_post;
 	try {
-		$method->invoke( $posts_page, null, 'https://www.linkedin.com/feed/update/urn:li:activity:9990000000000000003', '2026-01-03T10:00', null );
+		$method->invoke( $posts_page, null, 'https://www.linkedin.com/feed/update/urn:li:activity:9990000000000000003', '2026-01-03T10:00', null, '' );
 		atomic_social_assert( false, 'Duplicate activity URN should be rejected.' );
 	} catch ( Throwable ) {
 	}
@@ -506,6 +510,7 @@ try {
 			'post_type'   => 'page',
 			'post_status' => 'publish',
 			'post_title'  => 'News',
+			'post_content' => '<!-- wp:atomic-wp-social-sync/feed {"providers":["linkedin"],"postsPerPage":2,"homepageOnly":false,"pagination":"numbers","presentation":"compact","layout":"stacked"} /-->',
 		)
 	);
 	atomic_social_assert( is_int( $news_page_id ) && $news_page_id > 0, 'News page could not be created.' );
@@ -561,6 +566,17 @@ try {
 		update_post_meta( $pid, MetaKeys::SHOW_ON_HOMEPAGE, '1' );
 		wp_set_object_terms( $pid, 'linkedin', SocialPostType::PROVIDER_TAXONOMY );
 	}
+	$plugin_settings = get_option( PluginSettings::OPTION_NAME, array() );
+	$plugin_settings = is_array( $plugin_settings ) ? $plugin_settings : array();
+	$plugin_settings['linkedin_sources'] = array(
+		array(
+			'id'    => 'ermn-source',
+			'label' => 'ERMN',
+			'url'   => 'https://www.linkedin.com/company/european-rural-mobility-network/posts/?feedView=all',
+		),
+	);
+	update_option( PluginSettings::OPTION_NAME, $plugin_settings );
+	update_post_meta( $embed_post_a, MetaKeys::LINKEDIN_SOURCE_ID, 'ermn-source' );
 	update_post_meta( $embed_post_a, MetaKeys::EMBED_URN, 'urn:li:share:7500553868422897664' );
 	update_post_meta( $embed_post_a, MetaKeys::EMBED_HEIGHT_COMPACT, '603' );
 	update_post_meta( $embed_post_a, MetaKeys::EMBED_HEIGHT_FULL, '1370' );
@@ -587,6 +603,9 @@ try {
 
 	$embed_html = $feed_renderer->render( $embed_query, $embed_attrs_with_cta );
 	atomic_social_assert( str_contains( $embed_html, 'id="atomic-linkedin-post-' . $embed_post_a . '"' ), 'Embed card anchor id is missing.' );
+	atomic_social_assert( str_contains( $embed_html, 'class="atomic-linkedin-post__header"' ), 'Editorial header must render when titles/dates are enabled.' );
+	atomic_social_assert( str_contains( $embed_html, '>LinkedIn Embed A<' ), 'Editorial title must use native post_title.' );
+	atomic_social_assert( str_contains( $embed_html, 'class="atomic-linkedin-post__date"' ), 'Editorial date element must render when enabled.' );
 	atomic_social_assert( str_contains( $embed_html, 'https://www.linkedin.com/embed/feed/update/urn:li:share:7500553868422897664?collapsed=1' ), 'Compact LinkedIn embed URL was not generated.' );
 	atomic_social_assert( 1 === substr_count( $embed_html, 'class="atomic-linkedin-posts__cta"' ), 'CTA must be rendered exactly once per feed.' );
 	atomic_social_assert( 1 === substr_count( $embed_html, 'class="atomic-linkedin-posts__cta-link"' ), 'CTA link must be rendered exactly once per feed.' );
@@ -609,6 +628,20 @@ try {
 	$embed_html_no_cta = $feed_renderer->render( $embed_query, $embed_attrs_no_cta );
 	atomic_social_assert( 0 === substr_count( $embed_html_no_cta, 'class="atomic-linkedin-posts__cta-link"' ), 'CTA disabled must render zero CTAs.' );
 
+	$embed_attrs_no_titles_dates = $feed_renderer->attributes(
+		array(
+			'providers'       => array( 'linkedin' ),
+			'postsPerPage'    => 10,
+			'homepageOnly'    => true,
+			'pagination'      => 'none',
+			'presentation'    => 'compact',
+			'showPostTitles'  => false,
+			'showDate'        => false,
+		)
+	);
+	$embed_html_no_titles_dates = $feed_renderer->render( $embed_query, $embed_attrs_no_titles_dates );
+	atomic_social_assert( ! str_contains( $embed_html_no_titles_dates, 'class="atomic-linkedin-post__header"' ), 'When titles and dates are disabled, no empty editorial header must be rendered.' );
+
 	// CTA enabled + no target => zero frontend CTA.
 	$embed_attrs_missing_target = $feed_renderer->attributes(
 		array(
@@ -624,7 +657,153 @@ try {
 	$embed_html_missing_target = $feed_renderer->render( $embed_query, $embed_attrs_missing_target );
 	atomic_social_assert( 0 === substr_count( $embed_html_missing_target, 'class="atomic-linkedin-posts__cta-link"' ), 'CTA enabled with no target page must render zero frontend CTAs.' );
 
-	$checks[] = 'LinkedIn embed-mode rendering + anchors + feed-level CTA';
+	// Per-post preview + per-post "Read full news" CTA (pagination-aware).
+	$news_feed_attrs = $feed_renderer->attributes(
+		array(
+			'providers'    => array( 'linkedin' ),
+			'postsPerPage' => 2,
+			'homepageOnly' => false,
+			'pagination'   => 'numbers',
+			'presentation' => 'compact',
+			'layout'       => 'stacked',
+			'page'         => 1,
+		)
+	);
+	$instance_key = (string) ( $news_feed_attrs['paginationKey'] ?? '' );
+	$public_key   = str_starts_with( $instance_key, 'atomic_social_page_' )
+		? 'feed_page_' . substr( $instance_key, strlen( 'atomic_social_page_' ) )
+		: '';
+	atomic_social_assert( '' !== $public_key, 'Public pagination key could not be derived.' );
+
+	$embed_attrs_post_cta = $feed_renderer->attributes(
+		array(
+			'providers'          => array( 'linkedin' ),
+			'postsPerPage'       => 10,
+			'homepageOnly'       => true,
+			'pagination'         => 'none',
+			'presentation'       => 'compact',
+			'showFullNewsCta'    => true,
+			'fullNewsCtaLabel'   => 'View all news',
+			'newsPageId'         => $news_page_id,
+			'postPreviewMode'    => true,
+			'postPreviewHeight'  => 620,
+			'allowEmbedScrolling'=> false,
+			'readFullNewsLinks'  => true,
+			'showPostCta'        => true,
+			'postCtaLabel'       => 'Read full news',
+		)
+	);
+	$embed_html_post_cta = $feed_renderer->render( $embed_query, $embed_attrs_post_cta );
+	atomic_social_assert( str_contains( $embed_html_post_cta, 'atomic-social-feed--post-preview' ), 'Preview mode must add a stable feed class.' );
+	atomic_social_assert( str_contains( $embed_html_post_cta, '--atomic-linkedin-preview-height:620px' ), 'Preview height CSS var must be rendered.' );
+	atomic_social_assert( str_contains( $embed_html_post_cta, 'scrolling="no"' ), 'Scroll reduction must use a safe iframe attribute only.' );
+	atomic_social_assert( 1 === substr_count( $embed_html_post_cta, 'class="atomic-linkedin-posts__cta-link"' ), 'Feed-level CTA must remain exactly once.' );
+	atomic_social_assert( 3 === substr_count( $embed_html_post_cta, 'class="atomic-linkedin-post__cta"' ), 'Post CTA must render once per post.' );
+	atomic_social_assert( 3 === substr_count( $embed_html_post_cta, 'class="atomic-linkedin-post__cta-link"' ), 'Post CTA link must render once per post.' );
+	atomic_social_assert( str_contains( $embed_html_post_cta, '>Read full news<' ), 'Custom Post CTA label was not preserved.' );
+
+	// Page 1 deep link should be clean: no `feed_page_x=1`.
+	$expected_page1 = get_permalink( $news_page_id ) . '#atomic-linkedin-post-' . (int) $embed_post_c;
+	atomic_social_assert( str_contains( $embed_html_post_cta, 'href="' . esc_url( $expected_page1 ) . '"' ), 'Page-1 deep link must be clean (no page=1 query arg).' );
+
+	// Page 2 deep link should contain the computed public key.
+	$expected_page2 = add_query_arg( $public_key, 2, get_permalink( $news_page_id ) ) . '#atomic-linkedin-post-' . (int) $embed_post_a;
+	atomic_social_assert( str_contains( $embed_html_post_cta, 'href="' . esc_url( $expected_page2 ) . '"' ), 'Page-2 deep link must include the correct feed_page_x param and anchor.' );
+
+	// Post CTA enabled but deep links disabled => link to the News page only (no anchor).
+	$embed_attrs_post_cta_no_deep = $feed_renderer->attributes(
+		array(
+			'providers'         => array( 'linkedin' ),
+			'postsPerPage'      => 10,
+			'homepageOnly'      => true,
+			'pagination'        => 'none',
+			'presentation'      => 'compact',
+			'newsPageId'        => $news_page_id,
+			'readFullNewsLinks' => false,
+			'showPostCta'       => true,
+			'postCtaLabel'      => 'Read full news',
+		)
+	);
+	$embed_html_post_cta_no_deep = $feed_renderer->render( $embed_query, $embed_attrs_post_cta_no_deep );
+	atomic_social_assert( 3 === substr_count( $embed_html_post_cta_no_deep, 'class="atomic-linkedin-post__cta-link"' ), 'Post CTA must still render once per post when deep links are disabled.' );
+	atomic_social_assert( ! str_contains( $embed_html_post_cta_no_deep, '#atomic-linkedin-post-' ), 'Deep links disabled must not add post anchors.' );
+
+	// Post CTA disabled => zero post CTAs.
+	$embed_attrs_no_post_cta = $feed_renderer->attributes(
+		array(
+			'providers'    => array( 'linkedin' ),
+			'postsPerPage' => 10,
+			'homepageOnly' => true,
+			'pagination'   => 'none',
+			'presentation' => 'compact',
+			'newsPageId'   => $news_page_id,
+			'showPostCta'  => false,
+		)
+	);
+	$embed_html_no_post_cta = $feed_renderer->render( $embed_query, $embed_attrs_no_post_cta );
+	atomic_social_assert( 0 === substr_count( $embed_html_no_post_cta, 'class="atomic-linkedin-post__cta-link"' ), 'Post CTA disabled must render zero CTAs.' );
+
+	// Stacked-only News navigation (current page only, sticky, highlight flag).
+	$news_nav_attrs = $feed_renderer->attributes(
+		array(
+			'providers'            => array( 'linkedin' ),
+			'postsPerPage'         => 2,
+			'homepageOnly'         => false,
+			'pagination'           => 'numbers',
+			'presentation'         => 'compact',
+			'layout'               => 'stacked',
+			'showNewsNavigation'   => true,
+			'newsNavigationTitle'  => 'Latest news',
+			'newsNavigationPosition' => 'left',
+			'stickyNewsNavigation' => true,
+			'highlightCurrentPost' => true,
+			'page'                 => 1,
+		)
+	);
+	$news_nav_query = $feed_query->query( $news_nav_attrs );
+	$news_nav_html  = $feed_renderer->render( $news_nav_query, $news_nav_attrs );
+	atomic_social_assert( str_contains( $news_nav_html, 'class="atomic-linkedin-news-layout' ), 'News navigation wrapper must be rendered for stacked layout.' );
+	atomic_social_assert( str_contains( $news_nav_html, 'class="atomic-linkedin-news-nav' ), 'News navigation <nav> must be rendered.' );
+	atomic_social_assert( 2 === substr_count( $news_nav_html, 'class="atomic-linkedin-news-nav__item"' ), 'News navigation must include only posts on the current paginated page.' );
+	atomic_social_assert( str_contains( $news_nav_html, '#atomic-linkedin-post-' ), 'News navigation links must target existing post anchors.' );
+	atomic_social_assert( str_contains( $news_nav_html, 'data-highlight-current="1"' ), 'News navigation wrapper must expose highlight flag to JS.' );
+
+	// Grid/Carousel must never render the sidebar even if the attribute is forced.
+	$grid_forced_nav_attrs = $feed_renderer->attributes(
+		array(
+			'providers'          => array( 'linkedin' ),
+			'postsPerPage'       => 2,
+			'pagination'         => 'none',
+			'layout'             => 'grid',
+			'showNewsNavigation' => true,
+		)
+	);
+	$grid_forced_nav_query = $feed_query->query( $grid_forced_nav_attrs );
+	$grid_forced_nav_html  = $feed_renderer->render( $grid_forced_nav_query, $grid_forced_nav_attrs );
+	atomic_social_assert( ! str_contains( $grid_forced_nav_html, 'class="atomic-linkedin-news-layout' ), 'Grid layout must not render News navigation.' );
+
+	$checks[] = 'LinkedIn embed-mode rendering + anchors + feed CTA + post preview + post CTA deep links';
+
+	ob_start();
+	( new LinkedInPostsPage() )->render();
+	$admin_posts_html = (string) ob_get_clean();
+	atomic_social_assert( str_contains( $admin_posts_html, '>Title<' ), 'LinkedIn Posts admin must expose a Title column.' );
+	atomic_social_assert( str_contains( $admin_posts_html, '>Source / Method<' ), 'LinkedIn Posts admin must expose a Source / Method column.' );
+	atomic_social_assert( str_contains( $admin_posts_html, '>Editorial title<' ), 'LinkedIn Posts modal must expose the editorial title field.' );
+	atomic_social_assert( str_contains( $admin_posts_html, '>Edit title<' ), 'LinkedIn Posts admin must expose the inline Edit title control.' );
+	atomic_social_assert( str_contains( $admin_posts_html, '>Edit<' ), 'LinkedIn Posts admin must keep the existing row-level Edit action (modal).' );
+	atomic_social_assert( str_contains( $admin_posts_html, '>ERMN<' ), 'LinkedIn Posts admin must display the configured source label.' );
+	$checks[] = 'LinkedIn Posts admin: editorial-first table + modal title field';
+
+	$_GET['page'] = LinkedInFeedSettingsPage::SLUG;
+	$_GET['tab'] = 'import';
+	ob_start();
+	( new LinkedInFeedSettingsPage( $settings, new DesignSettingsPage( $settings ) ) )->render();
+	$import_settings_html = (string) ob_get_clean();
+	atomic_social_assert( ! str_contains( $import_settings_html, '>Experimental<' ), 'Import settings must NOT display the Experimental section.' );
+	atomic_social_assert( ! str_contains( $import_settings_html, '>Import directly from LinkedIn<' ), 'Import settings must NOT display the Direct Import button.' );
+	atomic_social_assert( str_contains( $import_settings_html, '>LinkedIn HTML Import<' ), 'Import settings must keep the manual HTML import workflow.' );
+	$checks[] = 'Import settings: manual HTML import only (no Experimental Direct Import)';
 
 	// Activity fallback rendering: compact must safely fall back to full (no collapsed=1 assumption).
 	$activity_embed = wp_insert_post(
@@ -642,6 +821,7 @@ try {
 	update_post_meta( $activity_embed, MetaKeys::INTEGRATION_MODE, IntegrationMode::EMBED );
 	update_post_meta( $activity_embed, MetaKeys::EMBED_STRATEGY, 'activity_fallback' );
 	update_post_meta( $activity_embed, MetaKeys::EMBED_URN, 'urn:li:activity:9990000000000000009' );
+	update_post_meta( $activity_embed, MetaKeys::EMBED_HEIGHT_FULL, '980' );
 	wp_set_object_terms( $activity_embed, 'linkedin', SocialPostType::PROVIDER_TAXONOMY );
 
 	$activity_attrs = $feed_renderer->attributes(
@@ -656,6 +836,7 @@ try {
 	$activity_html  = $feed_renderer->render( $activity_query, $activity_attrs );
 	atomic_social_assert( str_contains( $activity_html, 'urn:li:activity:9990000000000000009' ), 'Activity URN was not rendered.' );
 	atomic_social_assert( ! str_contains( $activity_html, 'urn:li:activity:9990000000000000009?collapsed=1' ), 'Activity embeds must not assume collapsed=1 works.' );
+	atomic_social_assert( str_contains( $activity_html, 'height="980"' ), 'Activity embeds should reuse stored estimated height when no manual override exists.' );
 	$checks[] = 'LinkedIn activity fallback rendering (safe compact fallback)';
 
 	// Sources sanitize: stable IDs + URL normalization + single default.
@@ -672,12 +853,319 @@ try {
 
 	// HTML import parser: dedupe by `data-urn` and extract permalink.
 	$parser = new LinkedInHtmlImportParser();
-	$html = '<div data-urn="urn:li:activity:1234567890123456789"></div><div data-urn="urn:li:activity:1234567890123456789"></div><a href="https://www.linkedin.com/feed/update/urn:li:activity:1234567890123456789/?tracking=1">post</a>';
+	$html = '<div data-urn="urn:li:activity:1234567890123456789">Europe\'s Rural Mobility Future is changing fast. Read more inside.<img src="https://example.test/image.jpg" width="1200" height="627" alt=""></div><div data-urn="urn:li:activity:1234567890123456789"></div><a href="https://www.linkedin.com/feed/update/urn:li:activity:1234567890123456789/?tracking=1">post</a>';
 	$items = $parser->parse( $html );
 	atomic_social_assert( 1 === count( $items ), 'HTML import parser must deduplicate identical activity URNs.' );
 	atomic_social_assert( 'urn:li:activity:1234567890123456789' === (string) $items[0]['urn'], 'HTML import parser did not extract expected URN.' );
 	atomic_social_assert( str_contains( (string) ( $items[0]['permalink'] ?? '' ), 'https://www.linkedin.com/feed/update/urn:li:activity:1234567890123456789/' ), 'HTML import parser did not extract the permalink.' );
-	$checks[] = 'LinkedIn HTML import parser (dedupe + permalink extraction)';
+	atomic_social_assert( str_contains( (string) ( $items[0]['suggested_title'] ?? '' ), 'Europe\'s Rural Mobility Future' ), 'HTML import parser did not extract a suggested title.' );
+	atomic_social_assert( 1200 === (int) ( $items[0]['source_width'] ?? 0 ), 'HTML import parser did not extract source width.' );
+	atomic_social_assert( 627 === (int) ( $items[0]['source_height'] ?? 0 ), 'HTML import parser did not extract source height.' );
+	atomic_social_assert( 1 === (int) ( $items[0]['media_count'] ?? 0 ), 'HTML import parser did not extract media count.' );
+	atomic_social_assert( 'image_single' === (string) ( $items[0]['content_profile'] ?? '' ), 'HTML import parser did not derive the content profile.' );
+	$checks[] = 'LinkedIn HTML import parser (dedupe + permalink + source metadata)';
+
+	// HTML import parser: deterministic title extraction fixtures (A–K).
+	$fixture_dir = __DIR__ . '/fixtures/linkedin';
+	$title_fixtures = array(
+		array(
+			'file'     => 'title-A-visually-hidden.html',
+			'expected' => 'Europe’s Rural Mobility Future: Setting Standards',
+		),
+		array(
+			'file'     => 'title-B-actor-contamination.html',
+			'expected' => 'Get Engaged and Become a Friend of the ERMN!',
+		),
+		array(
+			'file'     => 'title-C-follower-count.html',
+			'expected' => 'Demand Responsive Transport (DRT) — Upcoming Webinar',
+		),
+		array(
+			'file'     => 'title-D-standalone-headline.html',
+			'expected' => 'Introducing the European Rural Mobility Network (ERMN)',
+		),
+		array(
+			'file'     => 'title-E-quoted-event-title.html',
+			'expected' => 'Financing the Right to Move: Sustainable Funding for Rural Mobility',
+		),
+		array(
+			'file'     => 'title-F-series-pills-1.html',
+			'expected' => 'Rural Mobility Pills #1 — Rural Mobility Challenges',
+		),
+		array(
+			'file'     => 'title-F-series-pills-2.html',
+			'expected' => 'Rural Mobility Pills #2 — Funding and Financing for Rural Mobility',
+		),
+		array(
+			'file'     => 'title-G-webinar-recap.html',
+			'expected' => 'Financing the Right to Move: Sustainable Funding for Rural Mobility — Webinar Recap',
+		),
+		array(
+			'file'     => 'title-H-upcoming-webinar.html',
+			'expected' => 'Demand Responsive Transport (DRT) — Upcoming Webinar',
+		),
+		array(
+			'file'     => 'title-I-decorative-emoji.html',
+			'expected' => 'Stay Updated with the ERMN Newsletters!',
+		),
+		array(
+			'file'     => 'title-J-math-bold-unicode.html',
+			'expected' => 'Financing the Right to Move: Sustainable Funding for Rural Mobility',
+		),
+		array(
+			'file'     => 'title-K-long-first-sentence.html',
+			'expected' => 'This is a very long first sentence designed to exceed the target title length and force the parser to select',
+		),
+	);
+
+	foreach ( $title_fixtures as $fixture ) {
+		$path = $fixture_dir . '/' . (string) $fixture['file'];
+		$fixture_html = (string) file_get_contents( $path );
+		$fixture_items = $parser->parse( $fixture_html );
+		atomic_social_assert( 1 === count( $fixture_items ), 'Title fixture should yield exactly one activity item: ' . (string) $fixture['file'] );
+		atomic_social_assert( (string) $fixture['expected'] === (string) ( $fixture_items[0]['suggested_title'] ?? '' ), 'Title fixture mismatch: ' . (string) $fixture['file'] );
+	}
+	$checks[] = 'HTML title extraction fixtures (A–K)';
+
+	// Placeholder detection must be strict.
+	atomic_social_assert( true === TitlePolicy::isGeneratedPlaceholderTitle( 'LinkedIn Activity 123456789' ), 'Generated placeholder title (Activity) must be recognized.' );
+	atomic_social_assert( true === TitlePolicy::isGeneratedPlaceholderTitle( 'LinkedIn post 123456789' ), 'Generated placeholder title (post) must be recognized.' );
+	atomic_social_assert( true === TitlePolicy::isGeneratedPlaceholderTitle( 'LinkedIn Activity' ), 'Historical placeholder title (Activity without ID) must be recognized.' );
+	atomic_social_assert( true === TitlePolicy::isGeneratedPlaceholderTitle( 'LinkedIn post' ), 'Historical placeholder title (post without ID) must be recognized.' );
+	$historical_bad = trim( (string) file_get_contents( $fixture_dir . '/title-L-historical-bad-generated-title.txt' ) );
+	atomic_social_assert( true === TitlePolicy::isGeneratedPlaceholderTitle( $historical_bad ), 'Historical faulty parser title must be considered replaceable/generated.' );
+	$manual_similar = trim( (string) file_get_contents( $fixture_dir . '/title-M-manual-editorial-title.txt' ) );
+	atomic_social_assert( false === TitlePolicy::isGeneratedPlaceholderTitle( $manual_similar ), 'Manual title starting with "LinkedIn Activity" must not be mistaken for a placeholder.' );
+	atomic_social_assert( false === TitlePolicy::isGeneratedPlaceholderTitle( 'Europe’s Rural Mobility Future' ), 'Real editorial title must not be mistaken for a placeholder.' );
+	$checks[] = 'Generated placeholder title detection';
+
+	// ERMN regression fixture (Analyze-only reference): verify stable activity->expected title mapping.
+	$ermn_html = (string) file_get_contents( $fixture_dir . '/ermn-page.html' );
+	$ermn_items = $parser->parse( $ermn_html );
+	$ermn_expected = array(
+		'7500553869874069507' => 'Europe’s Rural Mobility Future: Setting Standards',
+		'7490025178949799936' => 'Rural Mobility Pills #2 — Funding and Financing for Rural Mobility',
+		'7483469057002807296' => 'Financing the Right to Move: Sustainable Funding for Rural Mobility — Webinar Recap',
+		'7463226157803429888' => 'Rural Mobility Pills #1 — Rural Mobility Challenges',
+		'7450918291247656960' => 'Stay Updated with the ERMN Newsletters!',
+		'7438265133002526720' => 'Demand Responsive Transport (DRT) — Webinar Recap',
+		'7472995170775502849' => 'Financing the Right to Move: Sustainable Funding for Rural Mobility',
+		'7445393116620169216' => 'Get Engaged and Become a Friend of the ERMN!',
+		'7434984450687598592' => 'Demand Responsive Transport (DRT) — Upcoming Webinar',
+		'7431716168845053952' => 'Introducing the European Rural Mobility Network (ERMN)',
+	);
+
+	foreach ( $ermn_items as $item ) {
+		$id = (string) ( $item['activity_id'] ?? '' );
+		if ( '' === $id || ! isset( $ermn_expected[ $id ] ) ) {
+			continue;
+		}
+		atomic_social_assert(
+			(string) $ermn_expected[ $id ] === (string) ( $item['suggested_title'] ?? '' ),
+			'ERMN regression mismatch for activity ' . $id
+		);
+	}
+	$checks[] = 'ERMN HTML regression fixture (expected titles)';
+
+	// Import title enrichment policy: placeholder titles can be replaced, manual titles remain protected.
+	$settings_page = new LinkedInFeedSettingsPage( $settings, new DesignSettingsPage( $settings ) );
+	$analyze_method = new ReflectionMethod( $settings_page, 'analyzeImportItem' );
+	$analyze_method->setAccessible( true );
+
+	$placeholder_post_id = wp_insert_post(
+		array(
+			'post_type'   => SocialPostType::POST_TYPE,
+			'post_status' => 'publish',
+			'post_title'  => 'LinkedIn Activity 5550000000000000001',
+		)
+	);
+	atomic_social_assert( is_int( $placeholder_post_id ) && $placeholder_post_id > 0, 'Placeholder embed post could not be created.' );
+	$created_post_ids[] = $placeholder_post_id;
+	update_post_meta( $placeholder_post_id, MetaKeys::PROVIDER, 'linkedin' );
+	update_post_meta( $placeholder_post_id, MetaKeys::INTEGRATION_MODE, IntegrationMode::EMBED );
+	update_post_meta( $placeholder_post_id, MetaKeys::EMBED_STRATEGY, 'activity_fallback' );
+	update_post_meta( $placeholder_post_id, MetaKeys::EMBED_URN, 'urn:li:activity:5550000000000000001' );
+	wp_set_object_terms( $placeholder_post_id, 'linkedin', SocialPostType::PROVIDER_TAXONOMY );
+
+	$row = $analyze_method->invoke(
+		$settings_page,
+		array(
+			'urn'             => 'urn:li:activity:5550000000000000001',
+			'activity_id'     => '5550000000000000001',
+			'permalink'       => 'https://www.linkedin.com/feed/update/urn:li:activity:5550000000000000001/',
+			'suggested_title' => 'Europe’s Rural Mobility Future: Setting Standards',
+		)
+	);
+	atomic_social_assert( is_array( $row ) && 'EXISTING_UPDATE_AVAILABLE' === (string) ( $row['status'] ?? '' ), 'Placeholder title must produce EXISTING — UPDATE AVAILABLE.' );
+	atomic_social_assert( 'generated_placeholder' === (string) ( $row['title_state'] ?? '' ), 'Placeholder title must be classified as generated_placeholder.' );
+
+	$empty_post_id = wp_insert_post(
+		array(
+			'post_type'   => SocialPostType::POST_TYPE,
+			'post_status' => 'publish',
+			'post_title'  => '',
+		)
+	);
+	atomic_social_assert( is_int( $empty_post_id ) && $empty_post_id > 0, 'Empty-title embed post could not be created.' );
+	$created_post_ids[] = $empty_post_id;
+	update_post_meta( $empty_post_id, MetaKeys::PROVIDER, 'linkedin' );
+	update_post_meta( $empty_post_id, MetaKeys::INTEGRATION_MODE, IntegrationMode::EMBED );
+	update_post_meta( $empty_post_id, MetaKeys::EMBED_STRATEGY, 'activity_fallback' );
+	update_post_meta( $empty_post_id, MetaKeys::EMBED_URN, 'urn:li:activity:5550000000000000003' );
+	wp_set_object_terms( $empty_post_id, 'linkedin', SocialPostType::PROVIDER_TAXONOMY );
+
+	$row_empty = $analyze_method->invoke(
+		$settings_page,
+		array(
+			'urn'             => 'urn:li:activity:5550000000000000003',
+			'activity_id'     => '5550000000000000003',
+			'permalink'       => 'https://www.linkedin.com/feed/update/urn:li:activity:5550000000000000003/',
+			'suggested_title' => 'Suggested title for empty post title',
+		)
+	);
+	atomic_social_assert( is_array( $row_empty ) && 'EXISTING_UPDATE_AVAILABLE' === (string) ( $row_empty['status'] ?? '' ), 'Empty title + suggestion must produce EXISTING — UPDATE AVAILABLE.' );
+	atomic_social_assert( 'empty' === (string) ( $row_empty['title_state'] ?? '' ), 'Empty title must be classified as empty.' );
+
+	$manual_post_id = wp_insert_post(
+		array(
+			'post_type'   => SocialPostType::POST_TYPE,
+			'post_status' => 'publish',
+			'post_title'  => 'Manual editorial title',
+		)
+	);
+	atomic_social_assert( is_int( $manual_post_id ) && $manual_post_id > 0, 'Manual embed post could not be created.' );
+	$created_post_ids[] = $manual_post_id;
+	update_post_meta( $manual_post_id, MetaKeys::PROVIDER, 'linkedin' );
+	update_post_meta( $manual_post_id, MetaKeys::INTEGRATION_MODE, IntegrationMode::EMBED );
+	update_post_meta( $manual_post_id, MetaKeys::EMBED_STRATEGY, 'activity_fallback' );
+	update_post_meta( $manual_post_id, MetaKeys::EMBED_URN, 'urn:li:activity:5550000000000000002' );
+	update_post_meta( $manual_post_id, MetaKeys::EXTERNAL_URL, 'https://www.linkedin.com/feed/update/urn:li:activity:5550000000000000002/' );
+	update_post_meta( $manual_post_id, MetaKeys::REMOTE_PUBLISHED_AT, gmdate( DATE_ATOM ) );
+	update_post_meta( $manual_post_id, MetaKeys::TITLE_LOCKED, '1' );
+	wp_set_object_terms( $manual_post_id, 'linkedin', SocialPostType::PROVIDER_TAXONOMY );
+
+	$row_manual = $analyze_method->invoke(
+		$settings_page,
+		array(
+			'urn'             => 'urn:li:activity:5550000000000000002',
+			'activity_id'     => '5550000000000000002',
+			'permalink'       => 'https://www.linkedin.com/feed/update/urn:li:activity:5550000000000000002/',
+			'suggested_title' => 'Suggested title should not overwrite',
+		)
+	);
+	atomic_social_assert( is_array( $row_manual ) && 'REVIEW' === (string) ( $row_manual['status'] ?? '' ), 'Manual titles must remain protected: should be REVIEW.' );
+	$checks[] = 'Import title enrichment policy (empty/placeholder vs manual)';
+
+	// Inline edit: must lock the title explicitly when edited.
+	$posts_page = new LinkedInPostsPage();
+	$lock_method = new ReflectionMethod( $posts_page, 'applyTitleLockedMeta' );
+	$lock_method->setAccessible( true );
+	$lock_method->invoke( $posts_page, $manual_post_id, 'Manual editorial title' );
+	atomic_social_assert( '1' === (string) get_post_meta( $manual_post_id, MetaKeys::TITLE_LOCKED, true ), 'Inline/modal title edits must set TITLE_LOCKED.' );
+	$lock_method->invoke( $posts_page, $manual_post_id, '' );
+	atomic_social_assert( '' === (string) get_post_meta( $manual_post_id, MetaKeys::TITLE_LOCKED, true ), 'Clearing the title must clear TITLE_LOCKED.' );
+	$checks[] = 'Inline title edit locking';
+
+	// Inline edit AJAX: post_title persistence + nonce + capability checks.
+	$ajax_post_id = wp_insert_post(
+		array(
+			'post_type'   => SocialPostType::POST_TYPE,
+			'post_status' => 'publish',
+			'post_title'  => 'Old title',
+		)
+	);
+	atomic_social_assert( is_int( $ajax_post_id ) && $ajax_post_id > 0, 'AJAX inline-edit test post could not be created.' );
+	$created_post_ids[] = $ajax_post_id;
+	update_post_meta( $ajax_post_id, MetaKeys::PROVIDER, 'linkedin' );
+	update_post_meta( $ajax_post_id, MetaKeys::INTEGRATION_MODE, IntegrationMode::EMBED );
+	update_post_meta( $ajax_post_id, MetaKeys::EMBED_STRATEGY, 'activity_fallback' );
+	update_post_meta( $ajax_post_id, MetaKeys::EMBED_URN, 'urn:li:activity:5550000000000000099' );
+	wp_set_object_terms( $ajax_post_id, 'linkedin', SocialPostType::PROVIDER_TAXONOMY );
+
+	$posts_page_ajax = new LinkedInPostsPage();
+	$nonce = wp_create_nonce( 'atomic_linkedin_feed_admin' );
+
+	$die_callback = static function ( mixed $message = '', mixed $title = '', mixed $args = array() ) : void { // phpcs:ignore VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable
+		throw new RuntimeException( is_scalar( $message ) ? (string) $message : 'wp_die' );
+	};
+	$die_handler_filter = static function () use ( $die_callback ) {
+		return $die_callback;
+	};
+
+	// Missing nonce must block.
+	add_filter( 'wp_die_handler', $die_handler_filter );
+	ob_start();
+	try {
+		$_POST = array(
+			'post_id' => (string) $ajax_post_id,
+			'title'   => 'New title',
+		);
+		$posts_page_ajax->ajaxUpdateTitleInline();
+		atomic_social_assert( false, 'Missing nonce should have blocked inline edit.' );
+	} catch ( RuntimeException ) {
+	} finally {
+		ob_end_clean();
+		remove_filter( 'wp_die_handler', $die_handler_filter );
+	}
+	atomic_social_assert( 'Old title' === (string) get_post_field( 'post_title', $ajax_post_id ), 'Missing nonce must not update post_title.' );
+
+	// Missing capability must block.
+	$subscriber_user_id = wp_insert_user(
+		array(
+			'user_login' => 'atomic_social_test_sub_' . wp_generate_password( 8, false, false ),
+			'user_pass'  => wp_generate_password( 24, true, true ),
+			'user_email' => 'atomic-social-test-sub-' . wp_generate_password( 8, false, false ) . '@example.test',
+			'role'       => 'subscriber',
+		)
+	);
+	atomic_social_assert( is_int( $subscriber_user_id ) && $subscriber_user_id > 0, 'Subscriber test user could not be created.' );
+	$created_user_ids[] = $subscriber_user_id;
+	wp_set_current_user( $subscriber_user_id );
+
+	add_filter( 'wp_die_handler', $die_handler_filter );
+	$cap_out = '';
+	try {
+		ob_start();
+		$_POST = array(
+			'nonce'   => $nonce,
+			'post_id' => (string) $ajax_post_id,
+			'title'   => 'New title',
+		);
+		$posts_page_ajax->ajaxUpdateTitleInline();
+	} catch ( RuntimeException ) {
+		$cap_out = (string) ob_get_clean();
+	} finally {
+		if ( ob_get_level() > 0 ) { ob_end_clean(); }
+		remove_filter( 'wp_die_handler', $die_handler_filter );
+	}
+	atomic_social_assert( str_contains( $cap_out, '"success":false' ), 'Missing capability should return a JSON error.' );
+	atomic_social_assert( 'Old title' === (string) get_post_field( 'post_title', $ajax_post_id ), 'Missing capability must not update post_title.' );
+
+	// Success: updates post_title, sets TITLE_LOCKED, keeps URN and post ID stable.
+	wp_set_current_user( $admin_user_id );
+	add_filter( 'wp_die_handler', $die_handler_filter );
+	$ok_out = '';
+	try {
+		ob_start();
+		$_POST = array(
+			'nonce'   => $nonce,
+			'post_id' => (string) $ajax_post_id,
+			'title'   => 'New title',
+		);
+		$posts_page_ajax->ajaxUpdateTitleInline();
+	} catch ( RuntimeException ) {
+		$ok_out = (string) ob_get_clean();
+	} finally {
+		if ( ob_get_level() > 0 ) { ob_end_clean(); }
+		remove_filter( 'wp_die_handler', $die_handler_filter );
+	}
+	$ok_json = json_decode( $ok_out, true );
+	atomic_social_assert( is_array( $ok_json ) && ! empty( $ok_json['success'] ), 'Inline edit success must return a JSON success payload.' );
+	atomic_social_assert( 'New title' === (string) get_post_field( 'post_title', $ajax_post_id ), 'Inline edit must persist post_title.' );
+	atomic_social_assert( '1' === (string) get_post_meta( $ajax_post_id, MetaKeys::TITLE_LOCKED, true ), 'Inline edit must set TITLE_LOCKED.' );
+	atomic_social_assert( 'urn:li:activity:5550000000000000099' === (string) get_post_meta( $ajax_post_id, MetaKeys::EMBED_URN, true ), 'Inline edit must not alter the URN.' );
+	atomic_social_assert( $ajax_post_id === (int) ( $ok_json['data']['post_id'] ?? 0 ), 'Inline edit must not change WP post ID.' );
+	$checks[] = 'Inline title edit AJAX security + persistence';
 
 	// Theme preset color storage: accept preset identity string without breaking legacy hex.
 	$sanitized = PluginSettings::sanitize(

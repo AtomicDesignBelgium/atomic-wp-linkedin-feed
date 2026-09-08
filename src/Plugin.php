@@ -94,7 +94,7 @@ final class Plugin {
 		$this->shortcode  = new Shortcode( $feed_query, $feed_renderer );
 		$settings_page    = new SettingsPage( $settings, $vault, $linkedin_oauth, $linkedin_client, $connections, $registry, $sync_service );
 		$design_settings  = new DesignSettingsPage( $settings );
-		$linkedin_settings = new LinkedInFeedSettingsPage( $settings, $design_settings );
+		$linkedin_settings = new LinkedInFeedSettingsPage( $settings, $design_settings, $connections, $sync_service, $registry, $post_repository, $logger );
 		$post_meta_box    = new PostSyncMetaBox( $connections, $reconciliation );
 		$linkedin_embed   = new LinkedInEmbedMetaBox();
 		$linkedin_posts   = new LinkedInPostsPage();
@@ -117,6 +117,18 @@ final class Plugin {
 		add_action( 'admin_post_atomic_linkedin_save_sources', array( $linkedin_settings, 'saveSources' ) );
 		add_action( 'admin_post_atomic_linkedin_analyze_import', array( $linkedin_settings, 'analyzeImport' ) );
 		add_action( 'admin_post_atomic_linkedin_run_import', array( $linkedin_settings, 'runImport' ) );
+		add_action( 'admin_post_atomic_social_save_advanced_settings', array( $linkedin_settings, 'saveAdvancedSettings' ) );
+		add_action( 'admin_post_atomic_social_delete_imported_posts', array( $linkedin_settings, 'deleteImportedPosts' ) );
+		add_action( 'admin_post_atomic_social_delete_imported_media', array( $linkedin_settings, 'deleteImportedMedia' ) );
+		add_action( 'admin_post_atomic_social_reset_runtime', array( $linkedin_settings, 'resetRuntimeData' ) );
+		add_action( 'admin_post_atomic_social_retrofit_imported_marker', array( $linkedin_settings, 'retrofitMarker' ) );
+		add_action( 'admin_post_atomic_social_clear_debug_log', array( $linkedin_settings, 'clearDebugLog' ) );
+		add_action( 'admin_post_atomic_social_dev_run_sync', array( $linkedin_settings, 'devRunSync' ) );
+		add_action( 'admin_post_atomic_social_dev_full_resync', array( $linkedin_settings, 'devFullResync' ) );
+		add_action( 'admin_post_atomic_social_dev_dry_run', array( $linkedin_settings, 'devDryRun' ) );
+		add_action( 'admin_post_atomic_social_dev_clear_cache', array( $linkedin_settings, 'devClearCache' ) );
+		add_action( 'admin_post_atomic_social_dev_reset_sync_state', array( $linkedin_settings, 'devResetSyncState' ) );
+		add_action( 'admin_post_atomic_social_dev_rebuild_content', array( $linkedin_settings, 'devRebuildContent' ) );
 		add_action( 'admin_post_atomic_social_connect', array( $settings_page, 'connect' ) );
 		add_action( 'admin_post_atomic_social_select_organization', array( $settings_page, 'selectOrganization' ) );
 		add_action( 'admin_post_atomic_social_connection_action', array( $settings_page, 'connectionAction' ) );
@@ -157,6 +169,22 @@ final class Plugin {
 			ATOMIC_WP_SOCIAL_SYNC_URL . 'assets/js/load-more.js',
 			array(),
 			ATOMIC_WP_SOCIAL_SYNC_VERSION,
+			true
+		);
+		wp_register_script(
+			'atomic-wp-social-sync-news-nav',
+			ATOMIC_WP_SOCIAL_SYNC_URL . 'assets/js/news-navigation.js',
+			array(),
+			ATOMIC_WP_SOCIAL_SYNC_VERSION,
+			true
+		);
+		$stack_height_js_path = ATOMIC_WP_SOCIAL_SYNC_PATH . 'assets/js/news-stack-height.js';
+		$stack_height_js_ver  = file_exists( $stack_height_js_path ) ? (string) filemtime( $stack_height_js_path ) : ATOMIC_WP_SOCIAL_SYNC_VERSION;
+		wp_register_script(
+			'atomic-wp-social-sync-stack-height',
+			ATOMIC_WP_SOCIAL_SYNC_URL . 'assets/js/news-stack-height.js',
+			array(),
+			$stack_height_js_ver,
 			true
 		);
 		wp_localize_script(

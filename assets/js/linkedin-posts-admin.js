@@ -11,6 +11,7 @@
 
 	var result = qs( '#atomic-linkedin-result' );
 	var postIdField = qs( '#atomic-linkedin-post-id' );
+	var titleField = qs( '#atomic-linkedin-title' );
 	var embedField = qs( '#atomic-linkedin-embed' );
 	var publishedField = qs( '#atomic-linkedin-published' );
 	var cancelBtn = qs( '#atomic-linkedin-cancel' );
@@ -154,6 +155,7 @@
 
 	function resetForm( mode ) {
 		if ( postIdField ) { postIdField.value = ''; }
+		if ( titleField ) { titleField.value = ''; }
 		if ( embedField ) { embedField.value = ''; }
 		if ( publishedField ) { publishedField.value = nowInWpTimezone(); }
 		if ( saveBtn ) {
@@ -189,6 +191,113 @@
 	}
 
 	document.addEventListener( 'click', function ( e ) {
+		var editTitleBtn = e.target.closest( '.atomic-linkedin-edit-title' );
+		if ( editTitleBtn ) {
+			e.preventDefault();
+			var cell = editTitleBtn.closest( 'td' );
+			if ( ! cell ) { return; }
+			var titleEl = qs( '.atomic-linkedin-title-text', cell );
+			if ( ! titleEl ) { return; }
+
+			// Prevent multiple editors in the same row.
+			if ( qs( '.atomic-linkedin-title-inline-editor', cell ) ) { return; }
+
+			var postId = editTitleBtn.getAttribute( 'data-post-id' );
+			var current = editTitleBtn.getAttribute( 'data-current-title' ) || ( titleEl.textContent || '' );
+			var errorEl = qs( '.atomic-linkedin-inline-title-error', cell );
+			if ( errorEl ) { errorEl.style.display = 'none'; errorEl.textContent = ''; }
+
+			var wrap = document.createElement( 'div' );
+			wrap.className = 'atomic-linkedin-title-inline-editor';
+			wrap.style.marginTop = '6px';
+
+			var input = document.createElement( 'input' );
+			input.type = 'text';
+			input.className = 'regular-text';
+			input.value = current;
+			input.setAttribute( 'aria-label', i18n.editorialTitle || 'Editorial title' );
+			input.style.maxWidth = '100%';
+
+			var save = document.createElement( 'button' );
+			save.type = 'button';
+			save.className = 'button button-small atomic-linkedin-title-save';
+			save.textContent = i18n.saveInline || 'Save';
+			save.style.marginLeft = '6px';
+
+			var cancel = document.createElement( 'button' );
+			cancel.type = 'button';
+			cancel.className = 'button button-small atomic-linkedin-title-cancel';
+			cancel.textContent = i18n.cancelInline || 'Cancel';
+			cancel.style.marginLeft = '6px';
+
+			save.setAttribute( 'data-post-id', postId );
+			cancel.setAttribute( 'data-post-id', postId );
+
+			wrap.appendChild( input );
+			wrap.appendChild( save );
+			wrap.appendChild( cancel );
+
+			titleEl.style.display = 'none';
+			editTitleBtn.style.display = 'none';
+			cell.insertBefore( wrap, qs( 'code', cell ) || null );
+			input.focus();
+			input.select();
+			return;
+		}
+
+		var cancelInlineBtn = e.target.closest( '.atomic-linkedin-title-cancel' );
+		if ( cancelInlineBtn ) {
+			e.preventDefault();
+			var cellCancel = cancelInlineBtn.closest( 'td' );
+			if ( ! cellCancel ) { return; }
+			var titleElCancel = qs( '.atomic-linkedin-title-text', cellCancel );
+			var editBtnCancel = qs( '.atomic-linkedin-edit-title', cellCancel );
+			var wrapCancel = qs( '.atomic-linkedin-title-inline-editor', cellCancel );
+			if ( wrapCancel ) { wrapCancel.remove(); }
+			if ( titleElCancel ) { titleElCancel.style.display = ''; }
+			if ( editBtnCancel ) { editBtnCancel.style.display = ''; }
+			return;
+		}
+
+		var saveInlineBtn = e.target.closest( '.atomic-linkedin-title-save' );
+		if ( saveInlineBtn ) {
+			e.preventDefault();
+			var cellSave = saveInlineBtn.closest( 'td' );
+			if ( ! cellSave ) { return; }
+			var wrapSave = qs( '.atomic-linkedin-title-inline-editor', cellSave );
+			var inputSave = wrapSave ? qs( 'input', wrapSave ) : null;
+			var titleElSave = qs( '.atomic-linkedin-title-text', cellSave );
+			var editBtnSave = qs( '.atomic-linkedin-edit-title', cellSave );
+			var errorSave = qs( '.atomic-linkedin-inline-title-error', cellSave );
+			var postIdSave = saveInlineBtn.getAttribute( 'data-post-id' );
+			if ( ! inputSave || ! postIdSave ) { return; }
+
+			if ( errorSave ) { errorSave.style.display = 'none'; errorSave.textContent = ''; }
+			saveInlineBtn.disabled = true;
+			var cancelBtnInline = qs( '.atomic-linkedin-title-cancel', wrapSave );
+			if ( cancelBtnInline ) { cancelBtnInline.disabled = true; }
+
+			ajax( 'atomic_linkedin_update_title_inline', { post_id: postIdSave, title: inputSave.value } ).then( function ( data ) {
+				if ( titleElSave ) { titleElSave.textContent = data.title || ''; }
+				if ( editBtnSave ) { editBtnSave.setAttribute( 'data-current-title', data.title || '' ); }
+				if ( wrapSave ) { wrapSave.remove(); }
+				if ( titleElSave ) { titleElSave.style.display = ''; }
+				if ( editBtnSave ) { editBtnSave.style.display = ''; }
+			} ).catch( function ( err ) {
+				if ( errorSave ) {
+					errorSave.textContent = err && err.message ? err.message : 'Error';
+					errorSave.style.display = 'block';
+				}
+			} ).then( function () {
+				saveInlineBtn.disabled = false;
+				if ( cancelBtnInline ) { cancelBtnInline.disabled = false; }
+			}, function () {
+				saveInlineBtn.disabled = false;
+				if ( cancelBtnInline ) { cancelBtnInline.disabled = false; }
+			} );
+			return;
+		}
+
 		var edit = e.target.closest( '.atomic-linkedin-edit' );
 		if ( edit ) {
 			e.preventDefault();
@@ -199,6 +308,7 @@
 				window.tb_show( i18n.editTitle || 'Edit LinkedIn Post', '#TB_inline?width=600&height=420&inlineId=atomic-linkedin-feed-modal' );
 			}
 			ajax( 'atomic_linkedin_get_post', { post_id: id } ).then( function ( data ) {
+				if ( titleField ) { titleField.value = data.title || ''; }
 				if ( embedField ) { embedField.value = data.urn || ''; }
 				if ( publishedField ) { publishedField.value = data.published_local || ''; }
 				var parsed = parseLinkedInInput( data.urn || '' );
@@ -257,6 +367,7 @@
 		var postId = postIdField ? postIdField.value : '';
 		var payload = {
 			post_id: postId,
+			editorial_title: titleField ? titleField.value : '',
 			embed_input: embedField ? embedField.value : '',
 			published_at: publishedField ? publishedField.value : '',
 			compat_height_mode: compatMode ? compatMode.value : 'default',

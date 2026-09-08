@@ -59,6 +59,11 @@
 				{ label: __( 'Solid', 'atomic-wp-social-sync' ), value: 'solid' }
 			];
 
+			var navPositionOptions = [
+				{ label: __( 'Left', 'atomic-wp-social-sync' ), value: 'left' },
+				{ label: __( 'Right', 'atomic-wp-social-sync' ), value: 'right' }
+			];
+
 			return el( element.Fragment, {},
 				el( InspectorControls, {},
 					el( PanelBody, { title: __( 'Feed', 'atomic-wp-social-sync' ), initialOpen: true },
@@ -89,6 +94,28 @@
 						} ) : null
 					),
 
+					el( PanelBody, { title: __( 'Editorial', 'atomic-wp-social-sync' ), initialOpen: false },
+						el( ToggleControl, { label: __( 'Show post titles', 'atomic-wp-social-sync' ), checked: ( a.showPostTitles !== false ), onChange: function ( v ) { set( { showPostTitles: !! v } ); } } ),
+						el( ToggleControl, { label: __( 'Show publication dates', 'atomic-wp-social-sync' ), checked: ( a.showDate !== false ), onChange: function ( v ) { set( { showDate: !! v } ); } } )
+					),
+
+					( a.layout === 'stacked' ) ? el( PanelBody, { title: __( 'News navigation', 'atomic-wp-social-sync' ), initialOpen: false },
+						el( ToggleControl, { label: __( 'Show News navigation', 'atomic-wp-social-sync' ), checked: !! a.showNewsNavigation, onChange: function ( v ) { set( { showNewsNavigation: v } ); } } ),
+						a.showNewsNavigation ? el( TextControl, { label: __( 'Navigation title', 'atomic-wp-social-sync' ), value: a.newsNavigationTitle || __( 'Latest news', 'atomic-wp-social-sync' ), onChange: function ( v ) { set( { newsNavigationTitle: v } ); } } ) : null,
+						a.showNewsNavigation ? el( SelectControl, { label: __( 'Position', 'atomic-wp-social-sync' ), value: a.newsNavigationPosition || 'left', options: navPositionOptions, onChange: function ( v ) { set( { newsNavigationPosition: v } ); } } ) : null,
+						a.showNewsNavigation ? el( ToggleControl, { label: __( 'Sticky navigation', 'atomic-wp-social-sync' ), checked: ( a.stickyNewsNavigation !== false ), onChange: function ( v ) { set( { stickyNewsNavigation: !! v } ); } } ) : null,
+						a.showNewsNavigation ? el( ToggleControl, { label: __( 'Highlight current post', 'atomic-wp-social-sync' ), checked: ( a.highlightCurrentPost !== false ), onChange: function ( v ) { set( { highlightCurrentPost: !! v } ); } } ) : null
+					) : null,
+
+					el( PanelBody, { title: __( 'Post preview & links', 'atomic-wp-social-sync' ), initialOpen: false },
+						el( ToggleControl, { label: __( 'Post preview mode', 'atomic-wp-social-sync' ), checked: !! a.postPreviewMode, onChange: function ( v ) { set( { postPreviewMode: v } ); } } ),
+						a.postPreviewMode ? el( RangeControl, { label: __( 'Preview height (px)', 'atomic-wp-social-sync' ), min: 280, max: 1400, value: a.postPreviewHeight || 620, onChange: function ( v ) { set( { postPreviewHeight: v } ); } } ) : null,
+						el( ToggleControl, { label: __( 'Reduce internal scrolling when supported', 'atomic-wp-social-sync' ), checked: ( a.allowEmbedScrolling !== false ), onChange: function ( v ) { set( { allowEmbedScrolling: !! v } ); }, help: __( 'LinkedIn embeds are cross-origin; browsers may ignore scroll suppression.', 'atomic-wp-social-sync' ) } ),
+						el( ToggleControl, { label: __( 'Read full news links', 'atomic-wp-social-sync' ), checked: !! a.readFullNewsLinks, onChange: function ( v ) { set( { readFullNewsLinks: v } ); } } ),
+						el( ToggleControl, { label: __( 'Show post CTA', 'atomic-wp-social-sync' ), checked: !! a.showPostCta, onChange: function ( v ) { set( { showPostCta: v } ); } } ),
+						a.showPostCta ? el( TextControl, { label: __( 'Post CTA label', 'atomic-wp-social-sync' ), value: a.postCtaLabel || __( 'Read full news', 'atomic-wp-social-sync' ), onChange: function ( v ) { set( { postCtaLabel: v } ); } } ) : null
+					),
+
 					el( PanelBody, { title: __( 'CTA', 'atomic-wp-social-sync' ), initialOpen: false },
 						el( ToggleControl, { label: __( 'CTA enabled', 'atomic-wp-social-sync' ), checked: a.showFullNewsCta, onChange: function ( v ) { set( { showFullNewsCta: v } ); } } ),
 						a.showFullNewsCta ? el( TextControl, { label: __( 'CTA label', 'atomic-wp-social-sync' ), value: a.fullNewsCtaLabel, onChange: function ( v ) { set( { fullNewsCtaLabel: v } ); } } ) : null,
@@ -110,6 +137,9 @@
 						} ) : null
 					)
 				),
+				( ( a.readFullNewsLinks || a.showPostCta ) && ! a.newsPageId )
+					? el( Notice, { status: 'warning', isDismissible: false }, __( 'Select a News target page to enable per-post links.', 'atomic-wp-social-sync' ) )
+					: null,
 				a.cardLink === 'local' && ! editorData.singlePagesEnabled ? el( Notice, { status: 'warning', isDismissible: false }, __( 'Local post links require Individual Social Post Pages to be enabled in Settings.', 'atomic-wp-social-sync' ) ) : null,
 				el( serverSideRender, { block: 'atomic-wp-social-sync/feed', attributes: a } )
 			);

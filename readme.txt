@@ -4,7 +4,7 @@ Tags: social media, linkedin, import, sync, gutenberg
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 0.9.0
+Stable tag: 0.10.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -85,6 +85,29 @@ LinkedIn is used for OAuth, Page discovery, post retrieval, direct post verifica
 5. Responsive frontend feed (placeholder).
 
 == Changelog ==
+
+= 0.10.0 =
+
+* Added: dedicated Help / Documentation tab with nine chapters (Quick Start, URN import, Bulk HTML import, Post management, Display layouts: Grid/Carousel/Stacked, Page architecture, LinkedIn limitations, Troubleshooting).
+* Added: contextual help links from Design, Import, and Advanced tabs pointing to #ermn-help-* fragments in the Help tab.
+* Added: onboarding notice on the LinkedIn Posts admin screen when no posts exist yet.
+* Added: Maintenance panel with bulk deletion of imported posts/media (guarded by typed DELETE confirmation string), plugin runtime-data reset, and legacy-post ownership retrofitting.
+* Added: strictly guarded Developer Mode behind WP_DEBUG + an admin toggle, exposing diagnostics, on-demand sync, force full resync, dry-run, cache clearing, sync-state reset, content rebuild, and bounded debug logging.
+* Added: News navigation sidebar for stacked / single-news-page layouts with sticky positioning, current-post highlight, CSS smooth-scrolling anchors, and scroll-margin-top support.
+* Added: configurable "View all news" CTA button below the carousel with a WordPress page selector.
+* Added: neutral public anchor IDs using #ermn-news-{post_id} / #ermn-news-article-{post_id} format.
+* Added: TitlePolicy strict generator-placeholder detection to protect manual editorial titles from import overwrites, paired with the _atomic_social_title_locked guard.
+* Added: Provider ownership tagging on imported Media Library items for bulk-action safety.
+* Added: Rebuild architecture using stored normalized payloads (_ermn_linkedin_source_payload) when developer tools or debug logging are enabled at import time.
+* Added: SKIPPED — TRASHED status during re-import to prevent trashed imported posts from reappearing; permanent deletion required for a clean re-import of previously imported content.
+* Changed: public markup naming normalized from atomic-social-* / atomic-linkedin-* prefixes to BEM ermn-news* and ermn-news-carousel* classes; public IDs neutralized.
+* Changed: carousel viewport height now enforced via --ermn-news-carousel-height CSS custom property on .ermn-news-carousel__viewport with overflow:hidden, keeping controls and CTA fully visible on every slide.
+* Changed: stacked-mode layout no longer enforces a fixed height; cards flow naturally with estimated strategy.
+* Fixed: LinkedIn Posts admin modal workflow regressions; LinkedIn activity-embed fallback robustness.
+
+= 0.9.0 =
+
+* Initial Atomic LinkedIn Feed branding release with dedicated LinkedIn Posts admin screen, Settings/Design/Import/Advanced/Help tabs, strict official-LinkedIn-embed URN parser, Gutenberg Atomic LinkedIn Posts block, [atomic_social_feed] shortcode, LinkedIn OAuth with Company Page selection and encrypted credential vault, scheduled synchronization, idempotent LinkedIn import with external-id deduplication, remote-edit/conflict/detach/two-stage-missing handling, local image import with featured-image locking, provider/account taxonomies, chronological multi-provider feed query, pin/hide controls, numbered pagination, accessible Load More, optional theme-native single pages, LinkedIn embed rendering, multi-column responsive grid, carousel presentation, and stacked presentation.
 
 = 0.1.0 =
 

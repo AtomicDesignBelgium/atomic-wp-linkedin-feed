@@ -46,6 +46,7 @@ final class PluginSettings {
 			'news_page_id'            => 0,
 			'linkedin_client_id'      => '',
 			'debug_logging'           => false,
+			'developer_tools'         => false,
 
 			// LinkedIn Sources (metadata only; no HTTP fetch).
 			'linkedin_sources'        => array(),
@@ -67,6 +68,7 @@ final class PluginSettings {
 			'layout_separator_thickness' => 1,
 			'layout_separator_color'     => '',
 			'layout_separator_spacing'   => 40,
+			'layout_stack_height_strategy' => 'estimated', // estimated|minimum|maximum
 
 			// Pagination defaults (visual only; semantics unchanged).
 			'pagination_font_size'            => 16,
@@ -89,6 +91,26 @@ final class PluginSettings {
 			'pagination_hover_border_color'   => '',
 			'pagination_shadow'               => 'none', // none|subtle
 			'pagination_transition_ms'        => 200,
+
+			// Post CTA defaults (visual only; block decides whether to render CTA).
+			'post_cta_font_size'              => 16,
+			'post_cta_font_weight'            => 600,
+			'post_cta_color'                  => '',
+
+			// Editorial defaults (visual only; block decides whether to show title/date).
+			'editorial_title_size'            => 18,
+			'editorial_title_weight'          => 650,
+			'editorial_title_color'           => '',
+			'editorial_date_size'             => 14,
+			'editorial_date_color'            => '',
+			'scroll_margin_top'               => 80,
+
+			// News navigation defaults (visual only; block decides whether to render navigation).
+			'news_nav_top_offset'             => 80,
+			'news_nav_font_size'              => 16,
+			'news_nav_date_size'              => 13,
+			'news_nav_item_gap'               => 12,
+			'news_nav_active_color'           => '',
 		);
 	}
 
@@ -100,6 +122,11 @@ final class PluginSettings {
 		$hover = self::allowed( $input['design_hover'] ?? '', array( 'none' => 'none', 'lift' => 'lift', 'scale' => 'scale' ), 'none' );
 
 		$layout_gap = self::allowed( $input['layout_gap'] ?? '', array( 'small' => 'small', 'medium' => 'medium', 'large' => 'large' ), 'medium' );
+		$stack_height_strategy = self::allowed(
+			$input['layout_stack_height_strategy'] ?? '',
+			array( 'estimated' => 'estimated', 'minimum' => 'minimum', 'maximum' => 'maximum' ),
+			'estimated'
+		);
 
 		$pagination_border_style = self::allowed( $input['pagination_border_style'] ?? '', array( 'solid' => 'solid', 'none' => 'none' ), 'solid' );
 		$pagination_shadow = self::allowed( $input['pagination_shadow'] ?? '', array( 'none' => 'none', 'subtle' => 'subtle' ), 'none' );
@@ -117,6 +144,7 @@ final class PluginSettings {
 			'news_page_id'            => absint( $input['news_page_id'] ?? 0 ),
 			'linkedin_client_id'      => sanitize_text_field( (string) ( $input['linkedin_client_id'] ?? '' ) ),
 			'debug_logging'           => ! empty( $input['debug_logging'] ),
+			'developer_tools'         => ! empty( $input['developer_tools'] ),
 
 			'linkedin_sources'        => self::sanitizeLinkedInSources( $input['linkedin_sources'] ?? array() ),
 
@@ -135,6 +163,7 @@ final class PluginSettings {
 			'layout_separator_thickness' => max( 0, min( 12, absint( $input['layout_separator_thickness'] ?? 1 ) ) ),
 			'layout_separator_color'     => $color_or_empty( $input['layout_separator_color'] ?? '' ),
 			'layout_separator_spacing'   => max( 0, min( 120, absint( $input['layout_separator_spacing'] ?? 40 ) ) ),
+			'layout_stack_height_strategy' => $stack_height_strategy,
 
 			'pagination_font_size'           => max( 10, min( 26, absint( $input['pagination_font_size'] ?? 16 ) ) ),
 			'pagination_font_weight'         => max( 200, min( 900, absint( $input['pagination_font_weight'] ?? 600 ) ) ),
@@ -156,6 +185,23 @@ final class PluginSettings {
 			'pagination_hover_border_color'  => $color_or_empty( $input['pagination_hover_border_color'] ?? '' ),
 			'pagination_shadow'              => $pagination_shadow,
 			'pagination_transition_ms'       => max( 0, min( 2000, absint( $input['pagination_transition_ms'] ?? 200 ) ) ),
+
+			'post_cta_font_size'             => max( 10, min( 26, absint( $input['post_cta_font_size'] ?? 16 ) ) ),
+			'post_cta_font_weight'           => max( 200, min( 900, absint( $input['post_cta_font_weight'] ?? 600 ) ) ),
+			'post_cta_color'                 => $color_or_empty( $input['post_cta_color'] ?? '' ),
+
+			'editorial_title_size'           => max( 12, min( 40, absint( $input['editorial_title_size'] ?? 18 ) ) ),
+			'editorial_title_weight'         => max( 200, min( 900, absint( $input['editorial_title_weight'] ?? 650 ) ) ),
+			'editorial_title_color'          => $color_or_empty( $input['editorial_title_color'] ?? '' ),
+			'editorial_date_size'            => max( 10, min( 26, absint( $input['editorial_date_size'] ?? 14 ) ) ),
+			'editorial_date_color'           => $color_or_empty( $input['editorial_date_color'] ?? '' ),
+			'scroll_margin_top'              => max( 0, min( 200, absint( $input['scroll_margin_top'] ?? 80 ) ) ),
+
+			'news_nav_top_offset'            => max( 0, min( 240, absint( $input['news_nav_top_offset'] ?? 80 ) ) ),
+			'news_nav_font_size'             => max( 10, min( 26, absint( $input['news_nav_font_size'] ?? 16 ) ) ),
+			'news_nav_date_size'             => max( 10, min( 20, absint( $input['news_nav_date_size'] ?? 13 ) ) ),
+			'news_nav_item_gap'              => max( 0, min( 40, absint( $input['news_nav_item_gap'] ?? 12 ) ) ),
+			'news_nav_active_color'          => $color_or_empty( $input['news_nav_active_color'] ?? '' ),
 		);
 	}
 

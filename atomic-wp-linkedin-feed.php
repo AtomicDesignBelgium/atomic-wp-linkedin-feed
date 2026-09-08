@@ -3,7 +3,7 @@
  * Plugin Name: Atomic LinkedIn Feed
  * Plugin URI: https://atomic-design.be/
  * Description: Manage a local LinkedIn feed based on manually selected official LinkedIn embeds.
- * Version: 0.9.0
+ * Version: 0.10.0
  * Author: Bernard Coubeaux
  * Author URI: https://atomic-design.be/
  * License: GPL-2.0-or-later

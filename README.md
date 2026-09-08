@@ -2,7 +2,7 @@
 
 Atomic LinkedIn Feed manages a local LinkedIn feed based on manually selected official LinkedIn embeds. The storage and feed layers remain provider-independent and reuse one `atomic_social_post` post type, one query, and one renderer.
 
-Version 0.1.0 · GPL-2.0-or-later
+Version 0.10.0 · GPL-2.0-or-later
 
 Bernard Coubeaux · [bernard@atomic-design.be](mailto:bernard@atomic-design.be)
 

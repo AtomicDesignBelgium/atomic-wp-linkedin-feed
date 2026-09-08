@@ -66,6 +66,74 @@ final class FeedQuery {
 		return $query;
 	}
 
+	/**
+	 * Return the ordered list of matching Social Post IDs for deep-link resolution.
+	 *
+	 * This reuses the exact same filtering and ordering rules as `query()`, but:
+	 * - fetches all matches (no pagination)
+	 * - returns IDs only
+	 *
+	 * @param array<string,mixed> $attributes
+	 * @return int[]
+	 */
+	public function orderedIds( array $attributes ): array {
+		$posts_per_page = -1;
+		$this->order    = 'oldest' === ( $attributes['order'] ?? 'newest' ) ? 'ASC' : 'DESC';
+		$tax_query      = array();
+		$providers      = $this->slugList( $attributes['providers'] ?? array() );
+		$connections    = $this->slugList( $attributes['connections'] ?? array() );
+		if ( $providers ) {
+			$tax_query[] = array( 'taxonomy' => SocialPostType::PROVIDER_TAXONOMY, 'field' => 'slug', 'terms' => $providers );
+		}
+		if ( $connections ) {
+			$tax_query[] = array( 'taxonomy' => SocialPostType::CONNECTION_TAXONOMY, 'field' => 'slug', 'terms' => $connections );
+		}
+
+		$meta_query = array(
+			'relation' => 'AND',
+			array(
+				'relation' => 'OR',
+				array( 'key' => MetaKeys::HIDDEN_FROM_FEED, 'compare' => 'NOT EXISTS' ),
+				array( 'key' => MetaKeys::HIDDEN_FROM_FEED, 'value' => '1', 'compare' => '!=' ),
+			),
+		);
+		if ( ! empty( $attributes['homepageOnly'] ) ) {
+			$meta_query[] = array( 'key' => MetaKeys::SHOW_ON_HOMEPAGE, 'value' => '1' );
+		}
+
+		$this->pinned_first = ! empty( $attributes['pinnedFirst'] );
+		if ( $this->pinned_first ) {
+			add_filter( 'posts_clauses', array( $this, 'orderPinnedFirst' ), 10, 2 );
+		}
+
+		$query = new WP_Query(
+			array(
+				'post_type'              => SocialPostType::POST_TYPE,
+				'post_status'            => 'publish',
+				'posts_per_page'         => $posts_per_page,
+				'paged'                  => 1,
+				'orderby'                => array( 'date' => $this->order, 'ID' => $this->order ),
+				'order'                  => $this->order,
+				'ignore_sticky_posts'    => true,
+				'meta_query'             => $meta_query,
+				'tax_query'              => $tax_query,
+				'fields'                 => 'ids',
+				'no_found_rows'          => true,
+				'update_post_meta_cache' => false,
+				'update_post_term_cache' => false,
+				'atomic_social_feed'     => true,
+			)
+		);
+
+		if ( $this->pinned_first ) {
+			remove_filter( 'posts_clauses', array( $this, 'orderPinnedFirst' ), 10 );
+		}
+
+		$ids = $query->posts;
+		$ids = is_array( $ids ) ? $ids : array();
+		return array_values( array_filter( array_map( 'intval', $ids ) ) );
+	}
+
 	/** @param array<string,string> $clauses @return array<string,string> */
 	public function orderPinnedFirst( array $clauses, WP_Query $query ): array {
 		if ( ! $query->get( 'atomic_social_feed' ) ) {
