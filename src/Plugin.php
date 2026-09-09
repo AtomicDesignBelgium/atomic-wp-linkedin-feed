@@ -30,6 +30,7 @@ use AtomicWPSocialSync\Support\PluginSettings;
 use AtomicWPSocialSync\Sync\ReconciliationService;
 use AtomicWPSocialSync\Sync\Scheduler;
 use AtomicWPSocialSync\Sync\SyncService;
+use AtomicWPSocialSync\Update\GitHubReleaseUpdater;
 use AtomicWPSocialSync\WordPress\SocialPostRepository;
 use AtomicWPSocialSync\WordPress\SocialPostType;
 
@@ -140,6 +141,15 @@ final class Plugin {
 		add_action( 'added_post_meta', array( $post_meta_box, 'lockFeaturedImage' ), 10, 3 );
 		add_action( 'updated_post_meta', array( $post_meta_box, 'lockFeaturedImage' ), 10, 3 );
 		add_action( 'deleted_post_meta', array( $post_meta_box, 'lockFeaturedImage' ), 10, 3 );
+
+		if ( is_admin() ) {
+			$updater = new GitHubReleaseUpdater(
+				ATOMIC_WP_SOCIAL_SYNC_FILE,
+				ATOMIC_WP_SOCIAL_SYNC_VERSION,
+				'https://github.com/AtomicDesignBelgium/atomic-wp-linkedin-feed'
+			);
+			$updater->registerHooks();
+		}
 
 		add_filter( 'cron_schedules', array( $this->scheduler, 'registerSchedule' ) );
 		add_action( Scheduler::HOOK, array( $this->scheduler, 'run' ) );

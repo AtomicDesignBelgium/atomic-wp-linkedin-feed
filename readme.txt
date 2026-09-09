@@ -4,7 +4,7 @@ Tags: social media, linkedin, import, sync, gutenberg
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 0.10.0
+Stable tag: 0.11.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -85,6 +85,18 @@ LinkedIn is used for OAuth, Page discovery, post retrieval, direct post verifica
 5. Responsive frontend feed (placeholder).
 
 == Changelog ==
+
+= 0.11.0 =
+
+* Added: native WordPress plugin updates via public GitHub Releases API (no external update server, no credentials shipped; admin installs 0.11.0 manually once, then future 0.11.1 / 0.12.0 appear through the native Plugins screen with Update now).
+* Added: WordPress `Update URI` header set to the public GitHub repository URL to prevent collisions with wordpress.org plugins.
+* Added: `GitHubReleaseUpdater` class with 6-hour transient cache, `wp_remote_get()` GitHub Releases query, exact canonical asset contract (`atomic-wp-linkedin-feed-v{VERSION}.zip`), `version_compare()` semantics, and safe failures for network errors, rate limits, missing assets, drafts, and prereleases.
+* Added: compatibility with WordPress native auto-updates and the "View version details" thickbox modal populated from GitHub release notes.
+* Added: read-only updater diagnostics (Updater source, latest checked version, last check timestamp, release asset found/missing) in the Developer Tools diagnostics panel.
+* Added: deterministic `scripts/release.ps1` PowerShell release helper that validates semantic version, verifies version references across all canonical files, inspects Git state, builds the canonical ZIP from a tag-ref with `git archive --prefix=atomic-wp-linkedin-feed/`, and computes SHA-256.
+* Added: focused fixture-driven updater tests covering: equal version → no update; newer 0.11.0 vs installed 0.10.0 → update; newer 0.11.1 vs installed 0.11.0 → update; exact ZIP missing → no update; HTTP error → safe no-op; draft release ignored; prerelease release ignored.
+* Fixed: PHP constant `ATOMIC_WP_SOCIAL_SYNC_VERSION` now correctly mirrors the plugin header version (was 0.9.0 while plugin was 0.10.0).
+* Changed: release ZIP packaging now explicitly excludes `.trae`, IDE artifacts, tests, and local credentials; dist/ remains gitignored.
 
 = 0.10.0 =
 

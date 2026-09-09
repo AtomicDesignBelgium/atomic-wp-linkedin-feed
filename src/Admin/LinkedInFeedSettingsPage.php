@@ -25,6 +25,7 @@ use AtomicWPSocialSync\Support\PluginSettings;
 use AtomicWPSocialSync\Support\TitlePolicy;
 use AtomicWPSocialSync\Sync\Scheduler;
 use AtomicWPSocialSync\Sync\SyncService;
+use AtomicWPSocialSync\Update\GitHubReleaseUpdater;
 use AtomicWPSocialSync\WordPress\SocialPostRepository;
 use AtomicWPSocialSync\WordPress\SocialPostType;
 use DateTimeImmutable;
@@ -2390,6 +2391,10 @@ final class LinkedInFeedSettingsPage {
 			__( 'Developer Tools', 'atomic-wp-social-sync' )         => ! empty( $settings['developer_tools'] ) ? 'ON' : 'OFF',
 			__( 'WP Cron', 'atomic-wp-social-sync' )                 => false === $next_cron ? __( 'Not scheduled', 'atomic-wp-social-sync' ) : 'OK',
 			__( 'Plugin Version', 'atomic-wp-social-sync' )          => (string) ( defined( 'ATOMIC_WP_SOCIAL_SYNC_VERSION' ) ? ATOMIC_WP_SOCIAL_SYNC_VERSION : '—' ),
+			__( 'Updater', 'atomic-wp-social-sync' )                 => 'GitHub Releases',
+			__( 'Latest checked version', 'atomic-wp-social-sync' )  => $this->updaterDiagnostic( 'latest_version' ),
+			__( 'Last release check', 'atomic-wp-social-sync' )      => $this->updaterDiagnostic( 'last_check' ),
+			__( 'Release asset', 'atomic-wp-social-sync' )           => $this->updaterDiagnostic( 'asset' ),
 			__( 'WordPress Version', 'atomic-wp-social-sync' )       => $GLOBALS['wp_version'] ?? '—',
 			__( 'PHP Version', 'atomic-wp-social-sync' )             => PHP_VERSION,
 			__( 'CPT Name', 'atomic-wp-social-sync' )                => SocialPostType::POST_TYPE,
@@ -2431,6 +2436,36 @@ final class LinkedInFeedSettingsPage {
 			}
 		}
 		return array( 'total_imported' => $total, 'with_snapshot' => $with );
+	}
+
+	/**
+	 * Read-only helper for the Developer diagnostic rows: expose updater state
+	 * without ever forcing a blocking network call on tab render.
+	 *
+	 * @param 'latest_version'|'last_check'|'asset' $key
+	 */
+	private function updaterDiagnostic( string $key ): string {
+		$updater = new GitHubReleaseUpdater(
+			defined( 'ATOMIC_WP_SOCIAL_SYNC_FILE' ) ? ATOMIC_WP_SOCIAL_SYNC_FILE : __FILE__,
+			defined( 'ATOMIC_WP_SOCIAL_SYNC_VERSION' ) ? ATOMIC_WP_SOCIAL_SYNC_VERSION : '0.0.0',
+			'https://github.com/AtomicDesignBelgium/atomic-wp-linkedin-feed'
+		);
+		$info = $updater->fetchLatestReleaseInfo();
+		switch ( $key ) {
+			case 'latest_version':
+				return is_array( $info ) && ! empty( $info['version'] ) ? (string) $info['version'] : '—';
+			case 'last_check':
+				if ( is_array( $info ) && ! empty( $info['last_check'] ) ) {
+					return wp_date( 'Y-m-d H:i:s', (int) $info['last_check'] );
+				}
+				return __( 'Not yet checked', 'atomic-wp-social-sync' );
+			case 'asset':
+				if ( ! is_array( $info ) ) {
+					return __( 'N/A — no cached release', 'atomic-wp-social-sync' );
+				}
+				return ! empty( $info['asset_found'] ) ? __( 'found', 'atomic-wp-social-sync' ) : __( 'missing', 'atomic-wp-social-sync' );
+		}
+		return '—';
 	}
 
 	private function redirectToAdvanced( string $status, int $count = 0, string $msg = '' ): never {
